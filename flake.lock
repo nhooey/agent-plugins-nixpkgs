@@ -1,0 +1,45 @@
+{
+  "nodes": {
+    "cc-safety-net-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792213229,
+        "narHash": "sha256-OdAUAfHcnUI4OyF4ixUni26Cw1n2XbJ7o7nrMr4teCU=",
+        "owner": "kenryu42",
+        "repo": "cc-safety-net",
+        "rev": "7d94f342c2c2a1d42299d26c060eac8c651b07c0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kenryu42",
+        "ref": "plugin",
+        "repo": "cc-safety-net",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1791956154,
+        "narHash": "sha256-jBYGPi4udQ9uo4KQp9m2J0546nJVQitG15gvZSaVVAs=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "55bfb4d7437bd4e09ab7cba58a43bd68eb310044",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "cc-safety-net-src": "cc-safety-net-src",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
