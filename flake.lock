@@ -17,6 +17,22 @@
         "type": "github"
       }
     },
+    "git-skills-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792407088,
+        "narHash": "sha256-1i6XiQz2UZxXuJnX4f8gD/1lS9tpRFPJPjLieL1/CDE=",
+        "owner": "nhooey",
+        "repo": "git-skills",
+        "rev": "5e038ebb23ee3573666d388de4e35771711fd2a9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nhooey",
+        "repo": "git-skills",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1791956154,
@@ -36,6 +52,7 @@
     "root": {
       "inputs": {
         "cc-safety-net-src": "cc-safety-net-src",
+        "git-skills-src": "git-skills-src",
         "nixpkgs": "nixpkgs"
       }
     }

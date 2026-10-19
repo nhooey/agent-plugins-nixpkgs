@@ -15,6 +15,12 @@
       url = "github:kenryu42/cc-safety-net/plugin";
       flake = false;
     };
+    # CC Safety Net rulebooks published in first-party skill repos (safetyNetRulebooks below).
+    # Taken as plain sources: only the rulebook files are read, not the repos' flakes.
+    git-skills-src = {
+      url = "github:nhooey/git-skills";
+      flake = false;
+    };
   };
 
   outputs =
@@ -39,6 +45,9 @@
         }
       );
 
+      # CC Safety Net rulebooks as attribute sets, for services.agent-plugins.ccSafetyNet.rulebooks.
+      safetyNetRulebooks.git-avoid-sweeping-operations = nixpkgs.lib.importJSON "${inputs.git-skills-src}/.cc-safety-net/rules/git-avoid-sweeping-operations/rulebook.json";
+
       darwinModules.default = import ./modules/darwin.nix { inherit self; };
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt);
@@ -53,6 +62,7 @@
             plugins = [ plugin ];
           };
           home = self.lib.mkSafetyNetHome pkgs [
+            self.safetyNetRulebooks.git-avoid-sweeping-operations
             {
               rulebook_version = 1;
               name = "check-rules";
@@ -71,24 +81,28 @@
           ];
         in
         {
-          # The hook, run as Claude Code runs it, blocks a rulebook rule and a built-in rule
-          # from the read-only home, and lets a harmless command through.
-          cc-safety-net-hook = pkgs.runCommand "check-cc-safety-net-hook" { nativeBuildInputs = [ pkgs.jq ]; } ''
-            export HOME=$TMPDIR CC_SAFETY_NET_HOME=${home}
-            test -f ${marketplace}/.claude-plugin/marketplace.json
-            test -e ${marketplace}/cc-safety-net/.claude-plugin/plugin.json
-            hook=$(jq -r '.hooks.PreToolUse[0].hooks[0].command' ${plugin}/hooks/hooks.json \
-              | sed "s|\''${CLAUDE_PLUGIN_ROOT}|${plugin}|")
-            run() {
-              jq -nc --arg c "$1" '{session_id:"check",transcript_path:"/tmp/check.jsonl",
-                hook_event_name:"PreToolUse",tool_name:"Bash",tool_input:{command:$c},
-                cwd:"/tmp",permission_mode:"default"}' | eval "$hook"
-            }
-            run 'git add -A' | grep -q 'custom.check-rules/block-git-add-all'
-            run 'git reset --hard' | grep -q 'git.reset-hard'
-            ! run 'git status' | grep -q deny
-            touch $out
-          '';
+          # The hook, run as Claude Code runs it, blocks rules from both rulebooks and a built-in
+          # rule from the read-only home, and lets a harmless command through.
+          cc-safety-net-hook =
+            pkgs.runCommand "check-cc-safety-net-hook" { nativeBuildInputs = [ pkgs.jq ]; }
+              ''
+                    export HOME=$TMPDIR CC_SAFETY_NET_HOME=${home}
+                    test -f ${marketplace}/.claude-plugin/marketplace.json
+                    test -e ${marketplace}/cc-safety-net/.claude-plugin/plugin.json
+                    hook=$(jq -r '.hooks.PreToolUse[0].hooks[0].command' ${plugin}/hooks/hooks.json \
+                      | sed "s|\''${CLAUDE_PLUGIN_ROOT}|${plugin}|")
+                    run() {
+                      jq -nc --arg c "$1" '{session_id:"check",transcript_path:"/tmp/check.jsonl",
+                        hook_event_name:"PreToolUse",tool_name:"Bash",tool_input:{command:$c},
+                        cwd:"/tmp",permission_mode:"default"}' | eval "$hook"
+                    }
+                    run 'git add -A' | grep -q 'custom.git-avoid-sweeping-operations/add-sweep'
+                run 'git -C repo add -A' | grep -q 'custom.check-rules/block-git-add-all'
+                    run 'git reset --hard' | grep -q 'git.reset-hard'
+                    run 'git stash' | grep -q 'custom.git-avoid-sweeping-operations/stash-sweep'
+                    ! run 'git status' | grep -q deny
+                    touch $out
+              '';
         }
       );
     };
