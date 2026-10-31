@@ -15,6 +15,14 @@
       url = "github:kenryu42/cc-safety-net/plugin";
       flake = false;
     };
+    superpowers-src = {
+      url = "github:obra/superpowers";
+      flake = false;
+    };
+    trailofbits-skills-src = {
+      url = "github:trailofbits/skills";
+      flake = false;
+    };
     # CC Safety Net rulebooks published in first-party skill repos (safetyNetRulebooks below).
     # Taken as plain sources: only the rulebook files are read, not the repos' flakes.
     git-skills-src = {
@@ -81,6 +89,23 @@
           ];
         in
         {
+          # Every vendored plugin has a manifest, and excludeSkills removes exactly what it names.
+          vendored-plugins =
+            let
+              p = self.packages.${pkgs.stdenv.hostPlatform.system};
+              trimmed = p.superpowers.override { excludeSkills = [ "diagnosing-superpowers" ]; };
+            in
+            pkgs.runCommand "check-vendored-plugins" { } ''
+              for plugin in ${p.superpowers} ${p.trailofbits-insecure-defaults} \
+                  ${p.trailofbits-sharp-edges} ${p.trailofbits-spec-to-code-compliance}; do
+                test -f $plugin/.claude-plugin/plugin.json
+              done
+              test -d ${p.superpowers}/skills/diagnosing-superpowers
+              ! test -e ${trimmed}/skills/diagnosing-superpowers
+              test -f ${trimmed}/skills/brainstorming/SKILL.md
+              touch $out
+            '';
+
           # The hook, run as Claude Code runs it, blocks rules from both rulebooks and a built-in
           # rule from the read-only home, and lets a harmless command through.
           cc-safety-net-hook =

@@ -8,15 +8,33 @@ Its sibling for skills is [`skillspkgs`](https://github.com/nhooey/skillspkgs).
 
 ## Packages
 
-| Package         | Plugin                                                                                                                                          |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cc-safety-net` | [CC Safety Net](https://github.com/kenryu42/cc-safety-net): blocks destructive shell commands and secret reads. Its hook runs with Nix's `node`. |
+| Package                                | Plugin                                                                                                                                                                                                                 |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cc-safety-net`                        | [CC Safety Net](https://github.com/kenryu42/cc-safety-net): blocks destructive shell commands and secret reads. Its hook runs with Nix's `node`.                                                                       |
+| `superpowers`                          | [superpowers](https://github.com/obra/superpowers): brainstorming, planning, TDD, debugging and review workflows. Its SessionStart hook injects `using-superpowers`; set `SUPERPOWERS_DISABLE_TELEMETRY=1` to stop its logo fetch. |
+| `trailofbits-insecure-defaults`        | [insecure-defaults](https://github.com/trailofbits/skills/tree/main/plugins/insecure-defaults): audits fail-open paths, fallback secrets, weak crypto and debug features.                                               |
+| `trailofbits-sharp-edges`              | [sharp-edges](https://github.com/trailofbits/skills/tree/main/plugins/sharp-edges): reviews API misuse and footguns, with per-language references.                                                                      |
+| `trailofbits-spec-to-code-compliance`  | [spec-to-code-compliance](https://github.com/trailofbits/skills/tree/main/plugins/spec-to-code-compliance): checks an implementation against its spec.                                                                  |
 
 Vendored plugins come from `flake = false` inputs, so `flake.lock` pins them. Update one with:
 
 ```bash
 nix flake update cc-safety-net-src
 ```
+
+To load a plugin without some of its skills, override it:
+
+```nix
+agent-plugins-nixpkgs.packages.${system}.superpowers.override {
+  excludeSkills = [ "diagnosing-superpowers" ];
+}
+```
+
+A name the plugin doesn't have under `skills/` fails the build, so an upstream rename can't bring a
+skill back unnoticed.
+
+To load plugins for one session without installing them, pass each package's store path to
+`claude --plugin-dir`.
 
 First-party plugin repositories should export their plugin directory as a flake package of their
 own; this flake then takes them as inputs and passes them through.

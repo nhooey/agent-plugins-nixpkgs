@@ -53,7 +53,41 @@
       "inputs": {
         "cc-safety-net-src": "cc-safety-net-src",
         "git-skills-src": "git-skills-src",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "superpowers-src": "superpowers-src",
+        "trailofbits-skills-src": "trailofbits-skills-src"
+      }
+    },
+    "superpowers-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792616449,
+        "narHash": "sha256-9+69YEdjdaDu5sWTyAbufSVcZgGD7h6wAq4nUVY2syE=",
+        "owner": "obra",
+        "repo": "superpowers",
+        "rev": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "obra",
+        "repo": "superpowers",
+        "type": "github"
+      }
+    },
+    "trailofbits-skills-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793212734,
+        "narHash": "sha256-vQiXAEv3+VsLweirfFaN1nD/PWuiDOlT5LeSLwIa304=",
+        "owner": "trailofbits",
+        "repo": "skills",
+        "rev": "2be6433b39e009cd2b6fd3be1895f6b1faa5af9a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "trailofbits",
+        "repo": "skills",
+        "type": "github"
       }
     }
   },
