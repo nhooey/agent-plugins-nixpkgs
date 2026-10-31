@@ -2,31 +2,41 @@
 { lib }:
 {
   # A plugin directory (one holding .claude-plugin/plugin.json) copied into the store, with
-  # optional patches. The name and version come from the plugin's own manifest.
+  # optional patches. The name and version come from the plugin's own manifest. The result is
+  # overridable, so a consumer can drop skills it doesn't want from a plugin it loads whole:
+  #   packages.superpowers.override { excludeSkills = [ "diagnosing-superpowers" ]; }
   mkClaudePlugin =
     pkgs:
-    {
-      src,
-      # Shell run in the copy, e.g. to point a hook at a store path.
-      postPatch ? "",
-    }:
-    let
-      manifest = lib.importJSON "${src}/.claude-plugin/plugin.json";
-    in
-    pkgs.runCommand "claude-plugin-${manifest.name}-${manifest.version}"
+    lib.makeOverridable (
       {
-        inherit postPatch;
-        passthru = {
-          claudePluginName = manifest.name;
-          inherit (manifest) version;
-        };
-      }
-      ''
-        cp -r ${src} $out
-        chmod -R u+w $out
-        cd $out
-        runHook postPatch
-      '';
+        src,
+        # Names of directories under skills/ to leave out. A name the plugin doesn't have is an
+        # error, so a rename upstream can't silently bring a skill back.
+        excludeSkills ? [ ],
+        # Shell run in the copy, e.g. to point a hook at a store path.
+        postPatch ? "",
+      }:
+      let
+        manifest = lib.importJSON "${src}/.claude-plugin/plugin.json";
+      in
+      pkgs.runCommand "claude-plugin-${manifest.name}-${manifest.version}"
+        {
+          inherit postPatch;
+          passthru = {
+            claudePluginName = manifest.name;
+            inherit (manifest) version;
+          };
+        }
+        ''
+          cp -r ${src} $out
+          chmod -R u+w $out
+          cd $out
+          ${lib.concatMapStrings (name: ''
+            rm -r ${lib.escapeShellArg "skills/${name}"}
+          '') excludeSkills}
+          runHook postPatch
+        ''
+    );
 
   # A local plugin marketplace listing `plugins` (from mkClaudePlugin, or any derivation with
   # passthru.claudePluginName) by relative path. Claude Code reads plugins straight from it,
