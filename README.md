@@ -72,27 +72,53 @@ own; this flake then takes them as inputs and passes them through.
 }
 ```
 
-On activation it writes `/Library/Application Support/ClaudeCode/managed-settings.d/40-agent-plugins.json`,
+On activation it writes `/Library/Application Support/ClaudeCode/managed-settings.d/<dropInName>`,
 owned by root, which:
 
-- registers a marketplace, `nix-pinned`, built in the store from the listed plugins
+- registers a marketplace, `<marketplaceName>`, built in the store from the listed plugins
   (`extraKnownMarketplaces`, `"source": "directory"`)
-- enables each plugin as `<plugin>@nix-pinned` (`enabledPlugins`)
+- enables each plugin as `<plugin>@<marketplaceName>` (`enabledPlugins`)
 - with rulebooks, sets `env.CC_SAFETY_NET_HOME` to a store folder holding them as real files,
   since Safety Net refuses symlinked config files. Safety Net still writes its audit log to
   `~/.cc-safety-net/logs`.
+- merges in `extraSettings` last, so it can add any other managed setting or override these.
+
+The other options of `services.agent-plugins`:
+
+| Option             | Default                   | Meaning                                              |
+| ------------------ | ------------------------- | ---------------------------------------------------- |
+| `marketplaceName`  | `"nix-pinned"`            | Name of the generated marketplace.                   |
+| `marketplaceOwner` | `"nix"`                   | Owner name written into the marketplace manifest.    |
+| `extraSettings`    | `{ }`                     | More managed settings merged into the drop-in.       |
+| `dropInName`       | `"40-agent-plugins.json"` | File name of the drop-in under `managed-settings.d`. |
+
+Rulebooks published by first-party skill repositories are flake outputs under
+`safetyNetRulebooks`, ready for `ccSafetyNet.rulebooks`:
+
+```nix
+ccSafetyNet.rulebooks = [
+  inputs.agent-plugins-nixpkgs.safetyNetRulebooks.git-avoid-sweeping-operations
+];
+```
+
+`git-avoid-sweeping-operations` comes from [`git-skills`](https://github.com/nhooey/git-skills).
 
 Nix doesn't track the drop-in: disabling the module leaves it in place, so delete it with `sudo`
 afterwards.
 
 ## Library
 
-- `lib.mkClaudePlugin pkgs { src, postPatch ? "" }`: copies a plugin directory into the store and
-  reads its name and version from `.claude-plugin/plugin.json`.
+- `lib.mkClaudePlugin pkgs { src, excludeSkills ? [ ], postPatch ? "" }`: copies a plugin directory
+  into the store, removes the `skills/` directories named in `excludeSkills`, runs `postPatch`, and
+  reads its name and version from `.claude-plugin/plugin.json`. The result is overridable with
+  `.override`.
 - `lib.mkMarketplace pkgs { name, owner, plugins }`: a local marketplace listing the plugins.
 - `lib.mkSafetyNetHome pkgs rulebooks`: a CC Safety Net home folder for `CC_SAFETY_NET_HOME`.
 
 ## Checks
 
-`nix flake check` builds the Safety Net package and a marketplace, then runs the plugin's hook the
-way Claude Code does: it must block a rulebook rule and a built-in rule, and allow `git status`.
+`nix flake check` builds every vendored plugin, and checks that each has a manifest and that
+`excludeSkills` removes exactly the skill it names. It also builds the Safety Net package and a
+marketplace, then runs the plugin's hook the way Claude Code does: it must block a rule from
+`safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check, and
+a built-in rule, and allow `git status`.
