@@ -4,8 +4,8 @@
   # Two kinds of plugin packages, as in skillspkgs:
   # 1. VENDORED third-party plugins: upstream ships no Nix package, so pkgs/ builds them from the
   #    `flake = false` *-src inputs below.
-  # 2. FIRST-PARTY plugins: repositories that export their plugin as a flake package of their
-  #    own are taken as inputs and passed through (none yet).
+  # 2. FIRST-PARTY plugins: a repository that exports its plugin as a flake package of its own
+  #    is taken as an input and passed through. No input is of this kind.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
