@@ -121,4 +121,5 @@ afterwards.
 `excludeSkills` removes exactly the skill it names. It also builds the Safety Net package and a
 marketplace, then runs the plugin's hook the way Claude Code does: it must block a rule from
 `safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check, and
-a built-in rule, and allow `git status`.
+a built-in rule, and allow `git status`. It fails if `nix fmt` (treefmt running nixfmt) would
+change a file.

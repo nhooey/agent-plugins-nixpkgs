@@ -13,7 +13,7 @@ Code's managed settings. [README.md](README.md) describes the packages, the modu
 ```bash
 nix develop                          # installs the agent skills
 nix build .#cc-safety-net            # or any other package
-nix flake check                      # builds the plugins and runs the Safety Net hook checks
-nix fmt                              # formats the Nix files with nixfmt
+nix flake check                      # builds the plugins, runs the Safety Net hook checks, checks formatting
+nix fmt                              # formats the Nix files with nixfmt, through treefmt
 nix flake update cc-safety-net-src   # bumps one vendored plugin
 ```

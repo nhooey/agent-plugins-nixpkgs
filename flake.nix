@@ -8,6 +8,10 @@
   #    is taken as an input and passed through. No input is of this kind.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # ---- vendored third-party sources ----
     # No rev in the URL: flake.lock pins it. Update with `nix flake update cc-safety-net-src`.
@@ -32,7 +36,12 @@
   };
 
   outputs =
-    { self, nixpkgs, ... }@inputs:
+    {
+      self,
+      nixpkgs,
+      treefmt-nix,
+      ...
+    }@inputs:
     let
       systems = [
         "aarch64-darwin"
@@ -41,6 +50,13 @@
         "x86_64-linux"
       ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
+      treefmt = forAllSystems (
+        pkgs:
+        treefmt-nix.lib.evalModule pkgs {
+          projectRootFile = "flake.nix";
+          programs.nixfmt.enable = true;
+        }
+      );
     in
     {
       lib = import ./lib { inherit (nixpkgs) lib; };
@@ -58,7 +74,7 @@
 
       darwinModules.default = import ./modules/darwin.nix { inherit self; };
 
-      formatter = forAllSystems (pkgs: pkgs.nixfmt);
+      formatter = forAllSystems (pkgs: treefmt.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
 
       # Entering the shell installs the agent skills in `.agents/skills/` from the
       # `skills-devshell/` sub-flake, run by path so its skill inputs stay out of this lock.
@@ -101,6 +117,9 @@
           ];
         in
         {
+          # `nix fmt` would change no file.
+          formatting = treefmt.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
+
           # Every vendored plugin has a manifest, and excludeSkills removes exactly what it names.
           vendored-plugins =
             let
