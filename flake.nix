@@ -60,6 +60,18 @@
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt);
 
+      # Entering the shell installs the agent skills in `.agents/skills/` from the
+      # `skills-devshell/` sub-flake, run by path so its skill inputs stay out of this lock.
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
+          packages = [ pkgs.nixfmt ];
+          shellHook = ''
+            root=$(git rev-parse --show-toplevel 2>/dev/null) || root=$PWD
+            nix run "$root/skills-devshell#reconcile" -- --scope=project
+          '';
+        };
+      });
+
       checks = forAllSystems (
         pkgs:
         let

@@ -1,2 +1,8 @@
 result
 result-*
+
+# Project-scope skill installs from `nix develop`'s startup hook; the
+# skills' preferences files beside them are the project's own.
+/.agents/skills/*
+!/.agents/skills/*.preferences.md
+/.claude/skills/
