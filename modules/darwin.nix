@@ -17,6 +17,8 @@ let
     inherit (cfg) plugins;
   };
   safetyNetHome = pluginLib.mkSafetyNetHome pkgs cfg.ccSafetyNet.rulebooks;
+  # Written even when empty, so every hook finds the file and reads `remind` for itself.
+  hookModesFile = pkgs.writeText "hook-modes.json" (builtins.toJSON cfg.hookModes);
   settings = lib.recursiveUpdate {
     extraKnownMarketplaces.${cfg.marketplaceName}.source = {
       source = "directory";
@@ -25,7 +27,10 @@ let
     enabledPlugins = lib.listToAttrs (
       map (p: lib.nameValuePair "${p.claudePluginName}@${cfg.marketplaceName}" true) cfg.plugins
     );
-    env = lib.optionalAttrs (cfg.ccSafetyNet.rulebooks != [ ]) {
+    env = {
+      AGENT_HOOK_MODES = "${hookModesFile}";
+    }
+    // lib.optionalAttrs (cfg.ccSafetyNet.rulebooks != [ ]) {
       CC_SAFETY_NET_HOME = "${safetyNetHome}";
     };
   } cfg.extraSettings;
@@ -60,6 +65,28 @@ in
         CC Safety Net rulebooks (rulebook.json contents). When set, they're built into a read-only
         store folder and CC_SAFETY_NET_HOME points the plugin at it, so no session can edit them.
         Safety Net still writes its audit log to ~/.cc-safety-net/logs.
+      '';
+    };
+
+    hookModes = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.enum [
+          "off"
+          "remind"
+          "deny"
+        ]
+      );
+      default = { };
+      example = {
+        scratchpad-guard = "deny";
+        reply-lint = "off";
+      };
+      description = ''
+        Each hook's mode, by hook name: `deny` denies the action, `remind` adds context saying
+        what it would have denied and lets it run, `off` does nothing. Written to a store file
+        whose path is env.AGENT_HOOK_MODES in the drop-in; a hook reads it through the
+        lib/hook-mode.sh helper mkClaudePlugin copies into its plugin. A hook not named here
+        is at `remind`, so a new hook ships at `remind` and moves to `deny` only by a change here.
       '';
     };
 

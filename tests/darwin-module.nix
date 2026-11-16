@@ -1,31 +1,16 @@
-# The nix-darwin module, evaluated with the one nix-darwin option it sets declared here, writes
+# The nix-darwin module, evaluated by tests/lib/darwin-activation.nix, writes
 # a drop-in that installs the marketplace, enables each plugin, points Safety Net at the
-# rulebooks and merges extraSettings; disabled, it writes nothing.
+# rulebooks, points AGENT_HOOK_MODES at hook-modes.json and merges extraSettings; disabled, it
+# writes nothing.
 {
   self,
   pkgs,
   helpers,
+  activationText,
 }:
 let
   inherit (pkgs) lib;
   p = self.packages.${pkgs.stdenv.hostPlatform.system};
-  activationText =
-    cfg:
-    (lib.evalModules {
-      modules = [
-        self.darwinModules.default
-        {
-          options.system.activationScripts.postActivation.text = lib.mkOption {
-            type = lib.types.lines;
-            default = "";
-          };
-          config = {
-            _module.args.pkgs = pkgs;
-            services.agent-plugins = cfg;
-          };
-        }
-      ];
-    }).config.system.activationScripts.postActivation.text;
   enabled = pkgs.writeText "activation-enabled" (activationText {
     enable = true;
     plugins = [
@@ -36,6 +21,10 @@ let
     marketplaceOwner = "check-owner";
     dropInName = "50-check.json";
     ccSafetyNet.rulebooks = [ self.safetyNetRulebooks.git-avoid-sweeping-operations ];
+    hookModes = {
+      check-guard = "deny";
+      check-lint = "off";
+    };
     extraSettings = {
       env.CHECK_VAR = "1";
       permissions.deny = [ "Bash(rm -rf /)" ];
@@ -71,12 +60,16 @@ pkgs.runCommand "check-darwin-module" { nativeBuildInputs = [ pkgs.jq ]; } ''
     "the marketplace the drop-in points at"
   home=$(jq -r '.env.CC_SAFETY_NET_HOME' $s)
   assert_json $home/rules/rule.json '.rules == ["git-avoid-sweeping-operations"]' "CC_SAFETY_NET_HOME rulebooks"
+  modes=$(jq -r '.env.AGENT_HOOK_MODES' $s)
+  case "$modes" in /nix/store/*-hook-modes.json) ;; *) fail "AGENT_HOOK_MODES is $modes" ;; esac
+  assert_json $modes '. == {"check-guard": "deny", "check-lint": "off"}' "hook-modes.json from hookModes"
   assert_json $s '.env.CHECK_VAR == "1"' "extraSettings env merged beside CC_SAFETY_NET_HOME"
   assert_json $s '.permissions.deny == ["Bash(rm -rf /)"]' "extraSettings permissions"
 
   s=$(settings_of ${noRulebooks} 40-agent-plugins.json)
   assert_json $s '.enabledPlugins == {"superpowers@nix-pinned": true}' "default marketplace name"
-  assert_json $s '.env == {}' "no CC_SAFETY_NET_HOME without rulebooks"
+  assert_json $s '.env | keys == ["AGENT_HOOK_MODES"]' "no CC_SAFETY_NET_HOME without rulebooks"
+  assert_json "$(jq -r '.env.AGENT_HOOK_MODES' $s)" '. == {}' "hook-modes.json without hookModes"
   assert_json "$(jq -r '.extraKnownMarketplaces["nix-pinned"].source.path' $s)/.claude-plugin/marketplace.json" \
     '.owner.name == "nix"' "default marketplace owner"
 

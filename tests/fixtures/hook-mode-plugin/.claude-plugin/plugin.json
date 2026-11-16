@@ -1,0 +1,5 @@
+{
+  "name": "hook-mode-check",
+  "version": "0.1.0",
+  "description": "A test plugin for the hook-mode check: one PreToolUse guard that reads its mode through lib/hook-mode.sh."
+}
