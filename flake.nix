@@ -37,6 +37,12 @@
       url = "github:nhooey/git-skills";
       flake = false;
     };
+    # `integration` until shell-skills' chmod-numeric, op-read and gh-auth-token rules merge;
+    # then the default branch.
+    shell-skills-src = {
+      url = "github:nhooey/shell-skills/integration";
+      flake = false;
+    };
   };
 
   outputs =
