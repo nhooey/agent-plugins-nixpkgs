@@ -17,6 +17,7 @@ in
   marketplace = import ./marketplace.nix args;
   safety-net-home = import ./safety-net-home.nix args;
   cc-safety-net-hook = import ./cc-safety-net-hook.nix args;
+  safety-net-rulebooks = import ./safety-net-rulebooks.nix args;
   darwin-module = import ./darwin-module.nix args;
   agent-plugins-cli = import ./agent-plugins-cli.nix { inherit self pkgs agent-plugins; };
 }
