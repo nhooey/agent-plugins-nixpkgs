@@ -56,3 +56,8 @@ in
     git-skills-hooks = inputs.git-skills.packages.${system}.hooks-plugin;
   }
 )
+# First-party plugins with code of their own, each its repository's `plugin` package.
+// {
+  coding-agent-kanban-turns =
+    inputs.coding-agent-kanban-turns.packages.${pkgs.stdenv.hostPlatform.system}.plugin;
+}
