@@ -35,7 +35,18 @@ To load plugins for one session without installing them, pass each package's sto
 `claude --plugin-dir`.
 
 First-party plugin repositories should export their plugin directory as a flake package of their
-own; this flake then takes them as inputs and passes them through.
+own; this flake then takes them as inputs and passes them through. These come through so far,
+each a hooks-only plugin whose `hooks.json` runs scripts copied in from the skills that document
+and test them:
+
+| Package                     | Plugin                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `coding-agent-skills-hooks` | The `hooks-plugin` package of [`coding-agent-skills`](https://github.com/nhooey/coding-agent-skills): `session-build-limits.sh` at SessionStart, the scratchpad guard before Bash, Write and Edit and at SubagentStart, the memory-write reminder, the plans check, the browser check, and the reply lint at Stop. |
+| `git-skills-hooks`          | The `hooks-plugin` package of [`git-skills`](https://github.com/nhooey/git-skills): `pull-request-sync-check.sh` after Bash, which flags an open pull request whose title or body has drifted from its commit.                                                                                                       |
+
+An update to either is a lock bump here (`agent-plugins update coding-agent-skills` or
+`agent-plugins update git-skills`), then a lock bump of this flake in MyNixOS, and a switch.
+Claude Code loads the new build at the next session start.
 
 ## nix-darwin module
 
@@ -131,6 +142,8 @@ with shared shell in `tests/lib/helpers.sh`:
 
 - `vendored-plugins`: each plugin's name, version and derivation name come from its manifest,
   Safety Net's hook runs the pinned node, and `excludeSkills` removes exactly the skill it names.
+- `first-party-plugins`: each passed-through hooks plugin is named by its manifest, and holds
+  every script its `hooks.json` runs.
 - `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
 - `marketplace`: `mkMarketplace` lists each plugin's name, source and version, and links each to
   its build.
