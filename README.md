@@ -117,9 +117,19 @@ afterwards.
 
 ## Checks
 
-`nix flake check` builds every vendored plugin, and checks that each has a manifest and that
-`excludeSkills` removes exactly the skill it names. It also builds the Safety Net package and a
-marketplace, then runs the plugin's hook the way Claude Code does: it must block a rule from
-`safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check, and
-a built-in rule, and allow `git status`. It fails if `nix fmt` (treefmt running nixfmt) would
-change a file.
+`nix flake check` runs the checks in `tests/`, one file per concern, with shared shell in
+`tests/lib/helpers.sh`:
+
+- `vendored-plugins`: each plugin's name, version and derivation name come from its manifest,
+  Safety Net's hook runs the pinned node, and `excludeSkills` removes exactly the skill it names.
+- `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
+- `marketplace`: `mkMarketplace` lists each plugin's name, source and version, and links each to
+  its build.
+- `safety-net-home`: `mkSafetyNetHome` writes `rule.json` and each rulebook as a regular file.
+- `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from
+  `safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check,
+  and a built-in rule, each by name, and allows `git status`.
+- `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each
+  plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and merges
+  `extraSettings`; disabled, it writes nothing.
+- `formatting`: fails if `nix fmt` (treefmt running nixfmt) would change a file.

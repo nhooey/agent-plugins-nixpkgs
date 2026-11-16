@@ -9,5 +9,9 @@ let
 in
 {
   vendored-plugins = import ./vendored-plugins.nix args;
+  exclude-skills-unknown-name = import ./exclude-skills-unknown-name.nix args;
+  marketplace = import ./marketplace.nix args;
+  safety-net-home = import ./safety-net-home.nix args;
   cc-safety-net-hook = import ./cc-safety-net-hook.nix args;
+  darwin-module = import ./darwin-module.nix args;
 }
