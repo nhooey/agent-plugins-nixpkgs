@@ -75,9 +75,27 @@
         "devshell": "devshell",
         "git-skills-src": "git-skills-src",
         "nixpkgs": "nixpkgs",
+        "shell-skills-src": "shell-skills-src",
         "superpowers-src": "superpowers-src",
         "trailofbits-skills-src": "trailofbits-skills-src",
         "treefmt-nix": "treefmt-nix"
+      }
+    },
+    "shell-skills-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794824377,
+        "narHash": "sha256-OC551o2rLwJXR4WC0f8rW+zoa4Uf5NsVB0AujWFjzHM=",
+        "owner": "nhooey",
+        "repo": "shell-skills",
+        "rev": "318539f52b38825af37bc55962b9f977f6198e22",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nhooey",
+        "ref": "integration",
+        "repo": "shell-skills",
+        "type": "github"
       }
     },
     "superpowers-src": {
