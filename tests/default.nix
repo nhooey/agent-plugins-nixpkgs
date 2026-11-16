@@ -1,6 +1,10 @@
 # The flake's checks, one file per concern. Each takes the flake's `self` and the `pkgs` of the
-# system being checked; tests/lib/helpers.sh holds the shell they share.
-{ self, pkgs }:
+# system being checked (agent-plugins-cli also the dev shell's tool); tests/lib/helpers.sh holds the shell they share.
+{
+  self,
+  pkgs,
+  agent-plugins,
+}:
 let
   args = {
     inherit self pkgs;
@@ -14,4 +18,5 @@ in
   safety-net-home = import ./safety-net-home.nix args;
   cc-safety-net-hook = import ./cc-safety-net-hook.nix args;
   darwin-module = import ./darwin-module.nix args;
+  agent-plugins-cli = import ./agent-plugins-cli.nix { inherit self pkgs agent-plugins; };
 }

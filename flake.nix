@@ -8,6 +8,10 @@
   #    is taken as an input and passed through. No input is of this kind.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    devshell = {
+      url = "github:numtide/devshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -39,6 +43,7 @@
     {
       self,
       nixpkgs,
+      devshell,
       treefmt-nix,
       ...
     }@inputs:
@@ -55,8 +60,11 @@
         treefmt-nix.lib.evalModule pkgs {
           projectRootFile = "flake.nix";
           programs.nixfmt.enable = true;
+          programs.ruff-format.enable = true;
         }
       );
+      # The `agent-plugins` command-line tool, kept out of `packages`, which lists plugins only.
+      agentPluginsTool = pkgs: pkgs.callPackage ./scripts/agent-plugins.nix { };
     in
     {
       lib = import ./lib { inherit (nixpkgs) lib; };
@@ -76,22 +84,23 @@
 
       formatter = forAllSystems (pkgs: treefmt.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
 
-      # Entering the shell installs the agent skills in `.agents/skills/` from the
-      # `skills-devshell/` sub-flake, run by path so its skill inputs stay out of this lock.
+      # The dev shell: `menu` lists its commands, and entering it installs the agent skills
+      # (see devshell.nix).
       devShells = forAllSystems (pkgs: {
-        default = pkgs.mkShell {
-          packages = [ pkgs.nixfmt ];
-          shellHook = ''
-            root=$(git rev-parse --show-toplevel 2>/dev/null) || root=$PWD
-            nix run "$root/skills-devshell#reconcile" -- --scope=project
-          '';
+        default = import ./devshell.nix {
+          inherit pkgs;
+          mkShell = devshell.legacyPackages.${pkgs.stdenv.hostPlatform.system}.mkShell;
+          agent-plugins = agentPluginsTool pkgs;
         };
       });
 
       # Behaviour checks live in tests/, one file per concern; formatting is checked here.
       checks = forAllSystems (
         pkgs:
-        import ./tests { inherit self pkgs; }
+        import ./tests {
+          inherit self pkgs;
+          agent-plugins = agentPluginsTool pkgs;
+        }
         // {
           # `nix fmt` would change no file.
           formatting = treefmt.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
