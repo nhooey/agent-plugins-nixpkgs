@@ -35,7 +35,18 @@ To load plugins for one session without installing them, pass each package's sto
 `claude --plugin-dir`.
 
 First-party plugin repositories should export their plugin directory as a flake package of their
-own; this flake then takes them as inputs and passes them through.
+own; this flake then takes them as inputs and passes them through. These come through so far,
+each a hooks-only plugin whose `hooks.json` runs scripts copied in from the skills that document
+and test them:
+
+| Package                     | Plugin                                                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `coding-agent-skills-hooks` | The `hooks-plugin` package of [`coding-agent-skills`](https://github.com/nhooey/coding-agent-skills): `session-build-limits.sh` at SessionStart, the scratchpad guard before Bash, Write and Edit and at SubagentStart, the memory-write reminder, the plans check, the browser check, and the reply lint at Stop. |
+| `git-skills-hooks`          | The `hooks-plugin` package of [`git-skills`](https://github.com/nhooey/git-skills): `pull-request-sync-check.sh` after Bash, which flags an open pull request whose title or body has drifted from its commit.                                                                                                       |
+
+An update to either is a lock bump here (`agent-plugins update coding-agent-skills` or
+`agent-plugins update git-skills`), then a lock bump of this flake in MyNixOS, and a switch.
+Claude Code loads the new build at the next session start.
 
 ## nix-darwin module
 
@@ -96,10 +107,14 @@ Rulebooks published by first-party skill repositories are flake outputs under
 ```nix
 ccSafetyNet.rulebooks = [
   inputs.agent-plugins-nixpkgs.safetyNetRulebooks.git-avoid-sweeping-operations
+  inputs.agent-plugins-nixpkgs.safetyNetRulebooks.shell-hygiene
 ];
 ```
 
-`git-avoid-sweeping-operations` comes from [`git-skills`](https://github.com/nhooey/git-skills).
+- `git-avoid-sweeping-operations` comes from [`git-skills`](https://github.com/nhooey/git-skills).
+- `shell-hygiene` comes from [`shell-skills`](https://github.com/nhooey/shell-skills): it blocks
+  killing processes by pattern, machine-wide installs, prunes, service and settings changes,
+  common numeric `chmod` modes, and `op read` and `gh auth token`.
 
 Nix doesn't track the drop-in: disabling the module leaves it in place, so delete it with `sudo`
 afterwards.
@@ -127,6 +142,8 @@ with shared shell in `tests/lib/helpers.sh`:
 
 - `vendored-plugins`: each plugin's name, version and derivation name come from its manifest,
   Safety Net's hook runs the pinned node, and `excludeSkills` removes exactly the skill it names.
+- `first-party-plugins`: each passed-through hooks plugin is named by its manifest, and holds
+  every script its `hooks.json` runs.
 - `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
 - `marketplace`: `mkMarketplace` lists each plugin's name, source and version, and links each to
   its build.
@@ -134,6 +151,9 @@ with shared shell in `tests/lib/helpers.sh`:
 - `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from
   `safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check,
   and a built-in rule, each by name, and allows `git status`.
+- `safety-net-rulebooks`: each rulebook in `safetyNetRulebooks` passes its own `tests` fixtures
+  through the hook: a `blocked` fixture is denied by its own rule, an `allowed` one isn't denied,
+  and every rule has a `blocked` fixture.
 - `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each
   plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and merges
   `extraSettings`; disabled, it writes nothing.
