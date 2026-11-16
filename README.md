@@ -91,6 +91,8 @@ owned by root, which:
 - with rulebooks, sets `env.CC_SAFETY_NET_HOME` to a store folder holding them as real files,
   since Safety Net refuses symlinked config files. Safety Net still writes its audit log to
   `~/.cc-safety-net/logs`.
+- sets `env.AGENT_HOOK_MODES` to `hook-modes.json` in the store, written from `hookModes`
+  ([Hook modes](#hook-modes)); with no `hookModes` it holds `{}`.
 - merges in `extraSettings` last, so it can add any other managed setting or override these.
 
 The other options of `services.agent-plugins`:
@@ -99,6 +101,7 @@ The other options of `services.agent-plugins`:
 | ------------------ | ------------------------- | ---------------------------------------------------- |
 | `marketplaceName`  | `"nix-pinned"`            | Name of the generated marketplace.                   |
 | `marketplaceOwner` | `"nix"`                   | Owner name written into the marketplace manifest.    |
+| `hookModes`        | `{ }`                     | Each hook's mode by name: `off`, `remind` or `deny`. |
 | `extraSettings`    | `{ }`                     | More managed settings merged into the drop-in.       |
 | `dropInName`       | `"40-agent-plugins.json"` | File name of the drop-in under `managed-settings.d`. |
 
@@ -120,12 +123,53 @@ ccSafetyNet.rulebooks = [
 Nix doesn't track the drop-in: disabling the module leaves it in place, so delete it with `sudo`
 afterwards.
 
+### Hook modes
+
+Every hook that can deny or replace an action has a mode, set by name in `hookModes`:
+
+| Mode     | The hook                                                                |
+| -------- | ----------------------------------------------------------------------- |
+| `deny`   | denies the action, with its reason.                                     |
+| `remind` | adds context saying what it would have denied, and lets the action run. |
+| `off`    | exits at once.                                                          |
+
+```nix
+services.agent-plugins.hookModes = {
+  scratchpad-guard = "deny";
+  reply-lint = "off";
+};
+```
+
+A plugin enabled in managed settings can't be turned off in a session, so the mode is how a
+misfiring hook is turned down: a change here and a switch, with no change to the hook.
+
+A hook reads its mode through `lib/hook-mode.sh`, which `mkClaudePlugin` copies into every plugin
+it builds. A bash hook sources it and calls `hook_mode <name>`; a hook in another language runs
+`bash "${CLAUDE_PLUGIN_ROOT}/lib/hook-mode.sh" <name>`. Either prints the mode from the file in
+`AGENT_HOOK_MODES`, and `remind` when the variable, the file or the name is missing, so a hook
+nobody has set only reminds.
+
+**A hook's first release is `remind`.** It moves to `deny` only by a change to `hookModes` the
+user makes after a trial of a few days, and its plan node says what the trial must show. A hook
+left at `remind` enforces nothing, so these, still at `remind`, are listed here until they move:
+
+| Hook               | Plugin                      | Denies or blocks                                         |
+| ------------------ | --------------------------- | -------------------------------------------------------- |
+| `scratchpad-guard` | `coding-agent-skills-hooks` | a call that writes a scratchpad script, at PreToolUse    |
+| `browser-check`    | `coding-agent-skills-hooks` | a Claude in Chrome call, wrong browser, at PreToolUse    |
+| `reply-lint`       | `coding-agent-skills-hooks` | a final reply the reply lint fails, at Stop              |
+
+These three still read their mode from a line in their skill's preferences file; reading it
+through `hook_mode` instead is a change in `coding-agent-skills`, whose hooks plugin then needs
+`mkClaudePlugin` from this flake to carry the helper.
+
 ## Library
 
 - `lib.mkClaudePlugin pkgs { src, excludeSkills ? [ ], postPatch ? "" }`: copies a plugin directory
-  into the store, removes the `skills/` directories named in `excludeSkills`, runs `postPatch`, and
-  reads its name and version from `.claude-plugin/plugin.json`. The result is overridable with
-  `.override`.
+  into the store, removes the `skills/` directories named in `excludeSkills`, adds the hook-mode
+  helper as `lib/hook-mode.sh` with a pinned `jq` (a plugin that already has that file fails the
+  build), runs `postPatch`, and reads its name and version from `.claude-plugin/plugin.json`. The
+  result is overridable with `.override`.
 - `lib.mkMarketplace pkgs { name, owner, plugins }`: a local marketplace listing the plugins.
 - `lib.mkSafetyNetHome pkgs rulebooks`: a CC Safety Net home folder for `CC_SAFETY_NET_HOME`.
 
@@ -156,8 +200,12 @@ with shared shell in `tests/lib/helpers.sh`:
   through the hook: a `blocked` fixture is denied by its own rule, an `allowed` one isn't denied,
   and every rule has a `blocked` fixture.
 - `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each
-  plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and merges
-  `extraSettings`; disabled, it writes nothing.
+  plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks, points
+  `AGENT_HOOK_MODES` at `hook-modes.json` and merges `extraSettings`; disabled, it writes nothing.
+- `hook-mode`: a test plugin's hook (`tests/fixtures/hook-mode-plugin`), run with the
+  `AGENT_HOOK_MODES` the module writes, denies at `deny`, adds context at `remind` and is silent
+  at `off`; with no `hookModes`, no file, or a name or value the file lacks, every hook reports
+  `remind`; and every plugin `mkClaudePlugin` builds here carries the helper.
 - `agent-plugins-cli`: the dev shell tool's unit tests of its argument parsing and the `nix`
   commands each token plans pass, its `--help` lists every token, and `update` rejects an input
   `flake.lock` lacks.
