@@ -134,6 +134,9 @@ with shared shell in `tests/lib/helpers.sh`:
 - `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from
   `safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check,
   and a built-in rule, each by name, and allows `git status`.
+- `safety-net-rulebooks`: each rulebook in `safetyNetRulebooks` passes its own `tests` fixtures
+  through the hook: a `blocked` fixture is denied by its own rule, an `allowed` one isn't denied,
+  and every rule has a `blocked` fixture.
 - `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each
   plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and merges
   `extraSettings`; disabled, it writes nothing.
