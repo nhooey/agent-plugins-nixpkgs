@@ -84,7 +84,14 @@
       );
 
       # CC Safety Net rulebooks as attribute sets, for services.agent-plugins.ccSafetyNet.rulebooks.
-      safetyNetRulebooks.git-avoid-sweeping-operations = nixpkgs.lib.importJSON "${inputs.git-skills-src}/.cc-safety-net/rules/git-avoid-sweeping-operations/rulebook.json";
+      safetyNetRulebooks =
+        let
+          rulebook = src: name: nixpkgs.lib.importJSON "${src}/.cc-safety-net/rules/${name}/rulebook.json";
+        in
+        {
+          git-avoid-sweeping-operations = rulebook inputs.git-skills-src "git-avoid-sweeping-operations";
+          shell-hygiene = rulebook inputs.shell-skills-src "shell-hygiene";
+        };
 
       darwinModules.default = import ./modules/darwin.nix { inherit self; };
 
