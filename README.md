@@ -16,11 +16,9 @@ Its sibling for skills is [`skillspkgs`](https://github.com/nhooey/skillspkgs).
 | `trailofbits-sharp-edges`              | [sharp-edges](https://github.com/trailofbits/skills/tree/main/plugins/sharp-edges): reviews API misuse and footguns, with per-language references.                                                                      |
 | `trailofbits-spec-to-code-compliance`  | [spec-to-code-compliance](https://github.com/trailofbits/skills/tree/main/plugins/spec-to-code-compliance): checks an implementation against its spec.                                                                  |
 
-Vendored plugins come from `flake = false` inputs, so `flake.lock` pins them. Update one with:
-
-```bash
-nix flake update cc-safety-net-src
-```
+Vendored plugins come from `flake = false` inputs, so `flake.lock` pins them. Update one with
+`agent-plugins update cc-safety-net-src` in the dev shell, or all of them with
+`agent-plugins update`.
 
 To load a plugin without some of its skills, override it:
 
@@ -115,10 +113,17 @@ afterwards.
 - `lib.mkMarketplace pkgs { name, owner, plugins }`: a local marketplace listing the plugins.
 - `lib.mkSafetyNetHome pkgs rulebooks`: a CC Safety Net home folder for `CC_SAFETY_NET_HOME`.
 
+## Dev shell
+
+`nix develop` enters a [numtide devshell](https://github.com/numtide/devshell) and installs the
+agent skills in `.agents/skills/`; `menu` lists its commands. Its tool, `agent-plugins`, takes the
+command tokens `build`, `check`, `fmt`, `list`, `update` and `skills`, each with `--help`, and
+`--dry-run` prints the `nix` commands a token runs without running them.
+
 ## Checks
 
-`nix flake check` runs the checks in `tests/`, one file per concern, with shared shell in
-`tests/lib/helpers.sh`:
+`agent-plugins check`, or `nix flake check`, runs the checks in `tests/`, one file per concern,
+with shared shell in `tests/lib/helpers.sh`:
 
 - `vendored-plugins`: each plugin's name, version and derivation name come from its manifest,
   Safety Net's hook runs the pinned node, and `excludeSkills` removes exactly the skill it names.
@@ -132,4 +137,7 @@ afterwards.
 - `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each
   plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and merges
   `extraSettings`; disabled, it writes nothing.
-- `formatting`: fails if `nix fmt` (treefmt running nixfmt) would change a file.
+- `agent-plugins-cli`: the dev shell tool's unit tests of its argument parsing and the `nix`
+  commands each token plans pass, its `--help` lists every token, and `update` rejects an input
+  `flake.lock` lacks.
+- `formatting`: fails if `nix fmt` (treefmt running nixfmt and ruff) would change a file.
