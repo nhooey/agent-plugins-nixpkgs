@@ -104,7 +104,7 @@ ccSafetyNet.rulebooks = [
 ```
 
 - `git-avoid-sweeping-operations` comes from [`git-skills`](https://github.com/nhooey/git-skills).
-- `shell-hygiene` comes from [`shell-skills`](https://github.com/nhooey/shell-skills): it blocks killing processes by pattern, machine-wide installs, prunes, service and settings changes, common numeric `chmod` modes, and `op read` and `gh auth token`.
+- `shell-hygiene` comes from [`shell-skills`](https://github.com/nhooey/shell-skills): it blocks killing processes by pattern, `rsync --delete`, recursive `chmod` and `chown`, machine-wide installs, prunes, service and settings changes, common numeric `chmod` modes, and `op read` and `gh auth token`.
 
 Nix doesn't track the drop-in: disabling the module leaves it in place, so delete it with `sudo` afterwards.
 
