@@ -1,5 +1,6 @@
 # Vendored third-party plugins: upstream ships no Nix package, so they're built here from the
-# `flake = false` *-src inputs that flake.lock pins.
+# `flake = false` *-src inputs that flake.lock pins. First-party plugins, at the end, are passed
+# through from their repositories' flakes.
 {
   pkgs,
   inputs,
@@ -43,4 +44,15 @@ in
       # Checks an implementation against its spec; writes spec-compliance/ in the repo.
       "spec-to-code-compliance"
     ]
+)
+# First-party hooks-only plugins, each the `hooks-plugin` package of its skill repository: its
+# hooks.json runs scripts copied in from the skills that document and test them.
+// (
+  let
+    inherit (pkgs.stdenv.hostPlatform) system;
+  in
+  {
+    coding-agent-skills-hooks = inputs.coding-agent-skills.packages.${system}.hooks-plugin;
+    git-skills-hooks = inputs.git-skills.packages.${system}.hooks-plugin;
+  }
 )

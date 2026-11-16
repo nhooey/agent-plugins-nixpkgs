@@ -13,6 +13,7 @@ let
 in
 {
   vendored-plugins = import ./vendored-plugins.nix args;
+  first-party-plugins = import ./first-party-plugins.nix args;
   exclude-skills-unknown-name = import ./exclude-skills-unknown-name.nix args;
   marketplace = import ./marketplace.nix args;
   safety-net-home = import ./safety-net-home.nix args;

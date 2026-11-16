@@ -5,7 +5,8 @@
   # 1. VENDORED third-party plugins: upstream ships no Nix package, so pkgs/ builds them from the
   #    `flake = false` *-src inputs below.
   # 2. FIRST-PARTY plugins: a repository that exports its plugin as a flake package of its own
-  #    is taken as an input and passed through. No input is of this kind.
+  #    is taken as an input and passed through: coding-agent-skills and git-skills, each as its
+  #    `hooks-plugin` package.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     devshell = {
@@ -31,6 +32,20 @@
       url = "github:trailofbits/skills";
       flake = false;
     };
+    # ---- first-party plugin repositories ----
+    # Flakes, for their `hooks-plugin` packages (packages below). Both on `integration` until
+    # the skill repositories' hooks-plugin pull requests merge; then the default branch.
+    # git-skills' rulebook still comes from git-skills-src below, at its own pin: `integration`
+    # reworks that rulebook, and publishing the rework is a change of its own.
+    coding-agent-skills = {
+      url = "github:nhooey/coding-agent-skills/integration";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    git-skills = {
+      url = "github:nhooey/git-skills/integration";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # CC Safety Net rulebooks published in first-party skill repos (safetyNetRulebooks below).
     # Taken as plain sources: only the rulebook files are read, not the repos' flakes.
     git-skills-src = {
