@@ -17,6 +17,26 @@
         "type": "github"
       }
     },
+    "devshell": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791918082,
+        "narHash": "sha256-oN9JrhRfHa7MUTdUq+11dHn7u0Z4WfEA4mhzBq0/zoQ=",
+        "owner": "numtide",
+        "repo": "devshell",
+        "rev": "9e29c63dde99a2d80c94b3d024c9768c01544558",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "devshell",
+        "type": "github"
+      }
+    },
     "git-skills-src": {
       "flake": false,
       "locked": {
@@ -52,10 +72,12 @@
     "root": {
       "inputs": {
         "cc-safety-net-src": "cc-safety-net-src",
+        "devshell": "devshell",
         "git-skills-src": "git-skills-src",
         "nixpkgs": "nixpkgs",
         "superpowers-src": "superpowers-src",
-        "trailofbits-skills-src": "trailofbits-skills-src"
+        "trailofbits-skills-src": "trailofbits-skills-src",
+        "treefmt-nix": "treefmt-nix"
       }
     },
     "superpowers-src": {
@@ -87,6 +109,26 @@
       "original": {
         "owner": "trailofbits",
         "repo": "skills",
+        "type": "github"
+      }
+    },
+    "treefmt-nix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791885023,
+        "narHash": "sha256-C3alQ2MEt0zVrUSho5NUDo3jmhbff72++bfwoqT9Omo=",
+        "owner": "numtide",
+        "repo": "treefmt-nix",
+        "rev": "0d6d739a833ba9a9c93034862e4a7b061a062a1c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "treefmt-nix",
         "type": "github"
       }
     }

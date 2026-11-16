@@ -16,11 +16,9 @@ Its sibling for skills is [`skillspkgs`](https://github.com/nhooey/skillspkgs).
 | `trailofbits-sharp-edges`              | [sharp-edges](https://github.com/trailofbits/skills/tree/main/plugins/sharp-edges): reviews API misuse and footguns, with per-language references.                                                                      |
 | `trailofbits-spec-to-code-compliance`  | [spec-to-code-compliance](https://github.com/trailofbits/skills/tree/main/plugins/spec-to-code-compliance): checks an implementation against its spec.                                                                  |
 
-Vendored plugins come from `flake = false` inputs, so `flake.lock` pins them. Update one with:
-
-```bash
-nix flake update cc-safety-net-src
-```
+Vendored plugins come from `flake = false` inputs, so `flake.lock` pins them. Update one with
+`agent-plugins update cc-safety-net-src` in the dev shell, or all of them with
+`agent-plugins update`.
 
 To load a plugin without some of its skills, override it:
 
@@ -72,27 +70,74 @@ own; this flake then takes them as inputs and passes them through.
 }
 ```
 
-On activation it writes `/Library/Application Support/ClaudeCode/managed-settings.d/40-agent-plugins.json`,
+On activation it writes `/Library/Application Support/ClaudeCode/managed-settings.d/<dropInName>`,
 owned by root, which:
 
-- registers a marketplace, `nix-pinned`, built in the store from the listed plugins
+- registers a marketplace, `<marketplaceName>`, built in the store from the listed plugins
   (`extraKnownMarketplaces`, `"source": "directory"`)
-- enables each plugin as `<plugin>@nix-pinned` (`enabledPlugins`)
+- enables each plugin as `<plugin>@<marketplaceName>` (`enabledPlugins`)
 - with rulebooks, sets `env.CC_SAFETY_NET_HOME` to a store folder holding them as real files,
   since Safety Net refuses symlinked config files. Safety Net still writes its audit log to
   `~/.cc-safety-net/logs`.
+- merges in `extraSettings` last, so it can add any other managed setting or override these.
+
+The other options of `services.agent-plugins`:
+
+| Option             | Default                   | Meaning                                              |
+| ------------------ | ------------------------- | ---------------------------------------------------- |
+| `marketplaceName`  | `"nix-pinned"`            | Name of the generated marketplace.                   |
+| `marketplaceOwner` | `"nix"`                   | Owner name written into the marketplace manifest.    |
+| `extraSettings`    | `{ }`                     | More managed settings merged into the drop-in.       |
+| `dropInName`       | `"40-agent-plugins.json"` | File name of the drop-in under `managed-settings.d`. |
+
+Rulebooks published by first-party skill repositories are flake outputs under
+`safetyNetRulebooks`, ready for `ccSafetyNet.rulebooks`:
+
+```nix
+ccSafetyNet.rulebooks = [
+  inputs.agent-plugins-nixpkgs.safetyNetRulebooks.git-avoid-sweeping-operations
+];
+```
+
+`git-avoid-sweeping-operations` comes from [`git-skills`](https://github.com/nhooey/git-skills).
 
 Nix doesn't track the drop-in: disabling the module leaves it in place, so delete it with `sudo`
 afterwards.
 
 ## Library
 
-- `lib.mkClaudePlugin pkgs { src, postPatch ? "" }`: copies a plugin directory into the store and
-  reads its name and version from `.claude-plugin/plugin.json`.
+- `lib.mkClaudePlugin pkgs { src, excludeSkills ? [ ], postPatch ? "" }`: copies a plugin directory
+  into the store, removes the `skills/` directories named in `excludeSkills`, runs `postPatch`, and
+  reads its name and version from `.claude-plugin/plugin.json`. The result is overridable with
+  `.override`.
 - `lib.mkMarketplace pkgs { name, owner, plugins }`: a local marketplace listing the plugins.
 - `lib.mkSafetyNetHome pkgs rulebooks`: a CC Safety Net home folder for `CC_SAFETY_NET_HOME`.
 
+## Dev shell
+
+`nix develop` enters a [numtide devshell](https://github.com/numtide/devshell) and installs the
+agent skills in `.agents/skills/`; `menu` lists its commands. Its tool, `agent-plugins`, takes the
+command tokens `build`, `check`, `fmt`, `list`, `update` and `skills`, each with `--help`, and
+`--dry-run` prints the `nix` commands a token runs without running them.
+
 ## Checks
 
-`nix flake check` builds the Safety Net package and a marketplace, then runs the plugin's hook the
-way Claude Code does: it must block a rulebook rule and a built-in rule, and allow `git status`.
+`agent-plugins check`, or `nix flake check`, runs the checks in `tests/`, one file per concern,
+with shared shell in `tests/lib/helpers.sh`:
+
+- `vendored-plugins`: each plugin's name, version and derivation name come from its manifest,
+  Safety Net's hook runs the pinned node, and `excludeSkills` removes exactly the skill it names.
+- `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
+- `marketplace`: `mkMarketplace` lists each plugin's name, source and version, and links each to
+  its build.
+- `safety-net-home`: `mkSafetyNetHome` writes `rule.json` and each rulebook as a regular file.
+- `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from
+  `safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check,
+  and a built-in rule, each by name, and allows `git status`.
+- `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each
+  plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and merges
+  `extraSettings`; disabled, it writes nothing.
+- `agent-plugins-cli`: the dev shell tool's unit tests of its argument parsing and the `nix`
+  commands each token plans pass, its `--help` lists every token, and `update` rejects an input
+  `flake.lock` lacks.
+- `formatting`: fails if `nix fmt` (treefmt running nixfmt and ruff) would change a file.
