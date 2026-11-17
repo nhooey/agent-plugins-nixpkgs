@@ -43,9 +43,10 @@ and test them:
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `coding-agent-skills-hooks` | The `hooks-plugin` package of [`coding-agent-skills`](https://github.com/nhooey/coding-agent-skills): `session-build-limits.sh` at SessionStart, the scratchpad guard before Bash, Write and Edit and at SubagentStart, the memory-write reminder, the plans check, the browser check, and the reply lint at Stop. |
 | `git-skills-hooks`          | The `hooks-plugin` package of [`git-skills`](https://github.com/nhooey/git-skills): `pull-request-sync-check.sh` after Bash, which flags an open pull request whose title or body has drifted from its commit.                                                                                                       |
+| `coding-agent-kanban-turns` | The `plugin` package of [`coding-agent-kanban-turns`](https://github.com/nhooey/coding-agent-kanban-turns): the kanban turn responses' mod, which draws clickable answers for Decide items and registers the `kanban_options` tool. |
 
-An update to either is a lock bump here (`agent-plugins update coding-agent-skills` or
-`agent-plugins update git-skills`), then a lock bump of this flake in MyNixOS, and a switch.
+An update to any of them is a lock bump here (`agent-plugins update coding-agent-skills`,
+`agent-plugins update git-skills` or `agent-plugins update coding-agent-kanban-turns`), then a lock bump of this flake in MyNixOS, and a switch.
 Claude Code loads the new build at the next session start.
 
 ## nix-darwin module

@@ -6,7 +6,7 @@
   #    `flake = false` *-src inputs below.
   # 2. FIRST-PARTY plugins: a repository that exports its plugin as a flake package of its own
   #    is taken as an input and passed through: coding-agent-skills and git-skills, each as its
-  #    `hooks-plugin` package.
+  #    `hooks-plugin` package, and coding-agent-kanban-turns as its `plugin` package.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     devshell = {
@@ -33,16 +33,20 @@
       flake = false;
     };
     # ---- first-party plugin repositories ----
-    # Flakes, for their `hooks-plugin` packages (packages below). Both on `integration` until
-    # the skill repositories' hooks-plugin pull requests merge; then the default branch.
-    # git-skills' rulebook still comes from git-skills-src below, at its own pin: `integration`
-    # reworks that rulebook, and publishing the rework is a change of its own.
+    # Flakes, for their `hooks-plugin` packages (packages below), on their default branches.
+    # git-skills' rulebook still comes from git-skills-src below, at its own pin.
     coding-agent-skills = {
-      url = "github:nhooey/coding-agent-skills/integration";
+      url = "github:nhooey/coding-agent-skills";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     git-skills = {
-      url = "github:nhooey/git-skills/integration";
+      url = "github:nhooey/git-skills";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # The kanban turn responses' mod, as its `plugin` package. It reads this flake as a plain
+    # source for `lib.mkClaudePlugin`, so its input here follows nothing back.
+    coding-agent-kanban-turns = {
+      url = "github:nhooey/coding-agent-kanban-turns";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
