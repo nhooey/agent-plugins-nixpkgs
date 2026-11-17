@@ -419,11 +419,11 @@
     "git-skills-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1792407088,
-        "narHash": "sha256-1i6XiQz2UZxXuJnX4f8gD/1lS9tpRFPJPjLieL1/CDE=",
+        "lastModified": 1794862190,
+        "narHash": "sha256-zACuEGkzkjh5JeZqTnQMiX7+Fh5GLiQwP3yobCY+ZCE=",
         "owner": "nhooey",
         "repo": "git-skills",
-        "rev": "5e038ebb23ee3573666d388de4e35771711fd2a9",
+        "rev": "cf782627e604650221a7e6741eb2cde4c856688a",
         "type": "github"
       },
       "original": {
@@ -466,16 +466,15 @@
     "shell-skills-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1794824377,
-        "narHash": "sha256-OC551o2rLwJXR4WC0f8rW+zoa4Uf5NsVB0AujWFjzHM=",
+        "lastModified": 1794862200,
+        "narHash": "sha256-2RVCzu43ieoBL8wfZzqD7ltuBxG1Y1aDgLuNVxFuR6A=",
         "owner": "nhooey",
         "repo": "shell-skills",
-        "rev": "318539f52b38825af37bc55962b9f977f6198e22",
+        "rev": "9f6767ab7c657217fc425dc86897e492e75c3b34",
         "type": "github"
       },
       "original": {
         "owner": "nhooey",
-        "ref": "integration",
         "repo": "shell-skills",
         "type": "github"
       }

@@ -1,4 +1,4 @@
-# The hook, run as Claude Code runs it, denies rules from both rulebooks and a built-in rule
+# The hook, run as Claude Code runs it, denies rules from all three rulebooks and a built-in rule
 # from the read-only home, and allows a harmless command.
 {
   self,
@@ -9,6 +9,7 @@ let
   plugin = self.packages.${pkgs.stdenv.hostPlatform.system}.cc-safety-net;
   home = self.lib.mkSafetyNetHome pkgs [
     self.safetyNetRulebooks.git-avoid-sweeping-operations
+    self.safetyNetRulebooks.git-avoid-sweeping-operations-with-exclusions
     {
       rulebook_version = 1;
       name = "check-rules";
@@ -16,10 +17,10 @@ let
       allowed_commands = [ "git" ];
       rules = [
         {
-          name = "block-git-add-all";
+          name = "block-git-describe-dirty";
           command = "git";
-          subcommand = "add";
-          block_args = [ "-A" ];
+          subcommand = "describe";
+          block_args = [ "--dirty" ];
           reason = "check";
         }
       ];
@@ -50,9 +51,9 @@ pkgs.runCommand "check-cc-safety-net-hook" { nativeBuildInputs = [ pkgs.jq ]; } 
   }
 
   expect_deny 'git add -A' custom.git-avoid-sweeping-operations/add-sweep
-  expect_deny 'git -C repo add -A' custom.check-rules/block-git-add-all
+  expect_deny 'git describe --dirty' custom.check-rules/block-git-describe-dirty
   expect_deny 'git reset --hard' git.reset-hard
-  expect_deny 'git stash' custom.git-avoid-sweeping-operations/stash-sweep
+  expect_deny 'git stash' custom.git-avoid-sweeping-operations-with-exclusions/stash-sweep
 
   # Allowed: exit 0 (checked by run) and no deny or ask decision.
   run 'git status'
