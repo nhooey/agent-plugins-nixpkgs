@@ -6,7 +6,8 @@ Code's managed settings. [README.md](README.md) describes the packages, the modu
 - `pkgs/` builds the vendored third-party plugins from the `flake = false` `*-src` inputs.
 - `lib/` holds `mkClaudePlugin`, `mkMarketplace` and `mkSafetyNetHome`.
 - `modules/darwin.nix` is the nix-darwin module.
-- `skills-devshell/` is the sub-flake whose skills `nix develop` installs in `.agents/skills/`.
+- `skills-devshell/` is the sub-flake whose skills `nix develop` installs in `.agents/skills/`:
+  skillspkgs' `skill-packaging` combination, with no additions.
 - `devshell.nix` is the dev shell; `scripts/agent_plugins.py` is its `agent-plugins` tool.
 
 ## Build and test
