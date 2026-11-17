@@ -11,27 +11,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Skill sources, the same repos `github:nhooey/skillspkgs` aggregates.
-    # They follow `nixpkgs` but not `agent-skill-flake`, so each keeps its own
-    # compatible builder.
-    coding-agent-skills = {
-      url = "github:nhooey/coding-agent-skills";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    git-skills = {
-      url = "github:nhooey/git-skills";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    nix-skills = {
-      url = "github:nhooey/nix-skills";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    shell-skills = {
-      url = "github:nhooey/shell-skills";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    writing-skills = {
-      url = "github:nhooey/writing-skills";
+    # skillspkgs' per-family combinations. This repository is in the skill
+    # packaging family, so it takes `skill-packaging` whole and adds nothing:
+    # it uses no language or tool the rest of that family doesn't.
+    skillspkgs-combinations = {
+      url = "github:nhooey/skillspkgs?dir=sources/combinations";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -47,32 +31,7 @@
       systems = import inputs.systems;
       name = "agent-plugins-nixpkgs-devshell";
       sources = [
-        # Commits, branches and pull requests.
-        { source = inputs.git-skills; }
-        # Writing this flake, its plugin packages and its nix-darwin module,
-        # and bumping the vendored plugin sources.
-        {
-          source = inputs.nix-skills;
-          skills = [
-            "nix-flakes"
-            "nix-flake-recursive-bump-input-versions"
-          ];
-        }
-        # Safe shell commands: named deletes, PIDs, no machine-wide changes.
-        { source = inputs.shell-skills; }
-        # Headless runs in checkouts, a tidy scratchpad, the plans graph, and
-        # the turn-response shape the user's own instructions ask for.
-        {
-          source = inputs.coding-agent-skills;
-          skills = [
-            "coding-agent-headless-in-checkout"
-            "coding-agent-kanban-turn-responses"
-            "coding-agent-plans-as-graph"
-            "coding-agent-scratchpad-scripts"
-          ];
-        }
-        # Commit messages, the README and AGENTS.md.
-        { source = inputs.writing-skills; }
+        { source = inputs.skillspkgs-combinations.combinations.skill-packaging; }
       ];
     };
 }
