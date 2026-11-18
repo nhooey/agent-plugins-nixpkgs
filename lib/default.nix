@@ -88,15 +88,33 @@
 
   # A CC Safety Net home folder (what CC_SAFETY_NET_HOME points at) holding rules/rule.json and
   # one rules/<name>/rulebook.json per rulebook, as real files: Safety Net refuses symlinked
-  # config files. `rulebooks` are rulebook.json contents as attribute sets.
+  # config files. The second argument is either the list of rulebooks (rulebook.json contents
+  # as attribute sets) or `{ rulebooks; transparentWrappers ? [ ]; }`, where each transparent
+  # wrapper, such as "nix", is a command whose protected child commands the rulebooks' rules
+  # also apply to (rule.json's `transparent_wrappers`).
   mkSafetyNetHome =
-    pkgs: rulebooks:
+    pkgs: arg:
     let
+      inherit
+        (
+          {
+            transparentWrappers = [ ];
+          }
+          // (if builtins.isList arg then { rulebooks = arg; } else arg)
+        )
+        rulebooks
+        transparentWrappers
+        ;
       ruleConfig = pkgs.writeText "rule.json" (
-        builtins.toJSON {
-          version = 1;
-          rules = map (r: r.name) rulebooks;
-        }
+        builtins.toJSON (
+          {
+            version = 1;
+            rules = map (r: r.name) rulebooks;
+          }
+          // lib.optionalAttrs (transparentWrappers != [ ]) {
+            transparent_wrappers = transparentWrappers;
+          }
+        )
       );
     in
     pkgs.runCommand "cc-safety-net-home" { } ''

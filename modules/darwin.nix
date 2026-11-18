@@ -16,7 +16,9 @@ let
     owner = cfg.marketplaceOwner;
     inherit (cfg) plugins;
   };
-  safetyNetHome = pluginLib.mkSafetyNetHome pkgs cfg.ccSafetyNet.rulebooks;
+  safetyNetHome = pluginLib.mkSafetyNetHome pkgs {
+    inherit (cfg.ccSafetyNet) rulebooks transparentWrappers;
+  };
   # Written even when empty, so every hook finds the file and reads `remind` for itself.
   hookModesFile = pkgs.writeText "hook-modes.json" (builtins.toJSON cfg.hookModes);
   settings = lib.recursiveUpdate {
@@ -65,6 +67,19 @@ in
         CC Safety Net rulebooks (rulebook.json contents). When set, they're built into a read-only
         store folder and CC_SAFETY_NET_HOME points the plugin at it, so no session can edit them.
         Safety Net still writes its audit log to ~/.cc-safety-net/logs.
+      '';
+    };
+
+    ccSafetyNet.transparentWrappers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "nix" ];
+      description = ''
+        Commands written into rule.json's `transparent_wrappers`: the rulebooks' rules also apply
+        to a protected command found among such a command's arguments, so with "nix" a rule on
+        `op` blocks `nix develop --command op ...` too. Once Safety Net finds a command inside a
+        wrapper, the wrapper's own rules no longer apply to that call. Only takes effect with
+        rulebooks set.
       '';
     };
 

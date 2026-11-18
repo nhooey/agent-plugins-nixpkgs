@@ -21,6 +21,7 @@ let
     marketplaceOwner = "check-owner";
     dropInName = "50-check.json";
     ccSafetyNet.rulebooks = [ self.safetyNetRulebooks.git-avoid-sweeping-operations ];
+    ccSafetyNet.transparentWrappers = [ "nix" ];
     hookModes = {
       check-guard = "deny";
       check-lint = "off";
@@ -60,6 +61,7 @@ pkgs.runCommand "check-darwin-module" { nativeBuildInputs = [ pkgs.jq ]; } ''
     "the marketplace the drop-in points at"
   home=$(jq -r '.env.CC_SAFETY_NET_HOME' $s)
   assert_json $home/rules/rule.json '.rules == ["git-avoid-sweeping-operations"]' "CC_SAFETY_NET_HOME rulebooks"
+  assert_json $home/rules/rule.json '.transparent_wrappers == ["nix"]' "CC_SAFETY_NET_HOME transparent wrappers"
   modes=$(jq -r '.env.AGENT_HOOK_MODES' $s)
   case "$modes" in /nix/store/*-hook-modes.json) ;; *) fail "AGENT_HOOK_MODES is $modes" ;; esac
   assert_json $modes '. == {"check-guard": "deny", "check-lint": "off"}' "hook-modes.json from hookModes"
