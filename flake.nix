@@ -56,10 +56,9 @@
       url = "github:nhooey/git-skills";
       flake = false;
     };
-    # `integration` until shell-skills' chmod-numeric, op-read and gh-auth-token rules merge;
-    # then the default branch.
+    # Each on the repository's default branch.
     shell-skills-src = {
-      url = "github:nhooey/shell-skills/integration";
+      url = "github:nhooey/shell-skills";
       flake = false;
     };
   };
@@ -109,6 +108,7 @@
         in
         {
           git-avoid-sweeping-operations = rulebook inputs.git-skills-src "git-avoid-sweeping-operations";
+          git-avoid-sweeping-operations-with-exclusions = rulebook inputs.git-skills-src "git-avoid-sweeping-operations-with-exclusions";
           shell-hygiene = rulebook inputs.shell-skills-src "shell-hygiene";
         };
 

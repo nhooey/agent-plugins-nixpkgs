@@ -466,16 +466,15 @@
     "shell-skills-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1794824377,
-        "narHash": "sha256-OC551o2rLwJXR4WC0f8rW+zoa4Uf5NsVB0AujWFjzHM=",
+        "lastModified": 1795098375,
+        "narHash": "sha256-ulRs6ifAD+MaTEFzaYCDgEc+NH63wq7B5gdkdakhb18=",
         "owner": "nhooey",
         "repo": "shell-skills",
-        "rev": "318539f52b38825af37bc55962b9f977f6198e22",
+        "rev": "dd41ef58a6888b00a10886cae927df2c2ac07ece",
         "type": "github"
       },
       "original": {
         "owner": "nhooey",
-        "ref": "integration",
         "repo": "shell-skills",
         "type": "github"
       }

@@ -99,11 +99,13 @@ Rulebooks published by first-party skill repositories are flake outputs under `s
 ```nix
 ccSafetyNet.rulebooks = [
   inputs.agent-plugins-nixpkgs.safetyNetRulebooks.git-avoid-sweeping-operations
+  inputs.agent-plugins-nixpkgs.safetyNetRulebooks.git-avoid-sweeping-operations-with-exclusions
   inputs.agent-plugins-nixpkgs.safetyNetRulebooks.shell-hygiene
 ];
 ```
 
 - `git-avoid-sweeping-operations` comes from [`git-skills`](https://github.com/nhooey/git-skills).
+- `git-avoid-sweeping-operations-with-exclusions` comes from `git-skills` too: it blocks a bare `git stash` and `git config --global` or `--system` writes, rules whose safe forms are carved out with `exclude_args`, so they sit in a rulebook of their own.
 - `shell-hygiene` comes from [`shell-skills`](https://github.com/nhooey/shell-skills): it blocks killing processes by pattern, `rsync --delete`, recursive `chmod` and `chown`, machine-wide installs, prunes, service and settings changes, common numeric `chmod` modes, and `op read` and `gh auth token`.
 
 Nix doesn't track the drop-in: disabling the module leaves it in place, so delete it with `sudo` afterwards.
@@ -164,8 +166,8 @@ Its tool, `agent-plugins`, takes the command tokens `build`, `check`, `fmt`, `li
 - `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
 - `marketplace`: `mkMarketplace` lists each plugin's name, source and version, and links each to its build.
 - `safety-net-home`: `mkSafetyNetHome` writes `rule.json` and each rulebook as a regular file.
-- `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from `safetyNetRulebooks.git-avoid-sweeping-operations`, a rule from a rulebook written in the check, and a built-in rule, each by name, and allows `git status`.
-- `safety-net-rulebooks`: each rulebook in `safetyNetRulebooks` passes its own `tests` fixtures through the hook: a `blocked` fixture is denied by its own rule, an `allowed` one isn't denied, and every rule has a `blocked` fixture.
+- `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from `safetyNetRulebooks.git-avoid-sweeping-operations`, one from `git-avoid-sweeping-operations-with-exclusions`, a rule from a rulebook written in the check, and a built-in rule, each by name, and allows `git status`.
+- `safety-net-rulebooks`: each rulebook in `safetyNetRulebooks`, `git-avoid-sweeping-operations`, `git-avoid-sweeping-operations-with-exclusions` and `shell-hygiene`, passes its own `tests` fixtures through the hook: a `blocked` fixture is denied by its own rule, an `allowed` one isn't denied, and every rule has a `blocked` fixture.
 - `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks, points `AGENT_HOOK_MODES` at `hook-modes.json` and merges `extraSettings`; disabled, it writes nothing.
 - `hook-mode`: a test plugin's hook (`tests/fixtures/hook-mode-plugin`), run with the `AGENT_HOOK_MODES` the module writes, denies at `deny`, adds context at `remind` and is silent at `off`; with no `hookModes`, no file, or a name or value the file lacks, every hook reports `remind`; and every plugin `mkClaudePlugin` builds here carries the helper.
 - `agent-plugins-cli`: the dev shell tool's unit tests of its argument parsing and the `nix` commands each token plans pass, its `--help` lists every token, and `update` rejects an input `flake.lock` lacks.
