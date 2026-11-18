@@ -40,7 +40,9 @@
 
   # A local plugin marketplace listing `plugins` (from mkClaudePlugin, or any derivation with
   # passthru.claudePluginName) by relative path. Claude Code reads plugins straight from it,
-  # so pointing managed settings at its store path installs exactly these builds.
+  # so pointing managed settings at its store path installs exactly these builds. Each plugin
+  # is a real copy, not a symlink: Claude Code refuses a mod module (hooks.json `modules`)
+  # whose real path is outside the marketplace directory.
   mkMarketplace =
     pkgs:
     {
@@ -66,8 +68,13 @@
       mkdir -p $out/.claude-plugin
       cp ${manifest} $out/.claude-plugin/marketplace.json
       ${lib.concatMapStrings (p: ''
-        ln -s ${p} $out/${p.claudePluginName}
+        cp -RL ${p} $out/${p.claudePluginName}
       '') plugins}
+      if links=$(find $out -type l) && [ -n "$links" ]; then
+        echo "mkMarketplace: symlinks left in the marketplace:" >&2
+        echo "$links" >&2
+        exit 1
+      fi
     '';
 
   # A CC Safety Net home folder (what CC_SAFETY_NET_HOME points at) holding rules/rule.json and

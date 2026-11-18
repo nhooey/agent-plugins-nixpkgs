@@ -1,5 +1,5 @@
-# mkMarketplace lists each plugin by name, relative source and version, and links each name to
-# that exact build.
+# mkMarketplace lists each plugin by name, relative source and version, and holds each name as a
+# real copy of that exact build, with no symlinks.
 {
   self,
   pkgs,
@@ -44,8 +44,9 @@ pkgs.runCommand "check-marketplace" { nativeBuildInputs = [ pkgs.jq ]; } ''
   source ${helpers}
   m=${marketplace}/.claude-plugin/marketplace.json
   diff <(jq -S . $m) <(echo ${pkgs.lib.escapeShellArg want} | jq -S .) || fail "marketplace.json differs from the expected listing"
-  test "$(readlink ${marketplace}/cc-safety-net)" = ${p.cc-safety-net} || fail "cc-safety-net link"
-  test "$(readlink ${marketplace}/superpowers)" = ${p.superpowers} || fail "superpowers link"
-  test "$(readlink ${marketplace}/bare)" = ${bare} || fail "bare link"
+  diff -r ${marketplace}/cc-safety-net ${p.cc-safety-net} || fail "cc-safety-net copy"
+  diff -r ${marketplace}/superpowers ${p.superpowers} || fail "superpowers copy"
+  diff -r ${marketplace}/bare ${bare} || fail "bare copy"
+  test -z "$(find ${marketplace} -type l)" || fail "symlinks in the marketplace"
   touch $out
 ''
