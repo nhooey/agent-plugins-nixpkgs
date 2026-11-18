@@ -2,7 +2,8 @@
 { lib }:
 {
   # A plugin directory (one holding .claude-plugin/plugin.json) copied into the store, with
-  # optional patches. The name and version come from the plugin's own manifest. The result is
+  # optional patches, and the hook-mode helper added as lib/hook-mode.sh (see ./hook-mode.sh).
+  # The name and version come from the plugin's own manifest. The result is
   # overridable, so a consumer can drop skills it doesn't want from a plugin it loads whole:
   #   packages.superpowers.override { excludeSkills = [ "diagnosing-superpowers" ]; }
   mkClaudePlugin =
@@ -34,6 +35,14 @@
           ${lib.concatMapStrings (name: ''
             rm -r ${lib.escapeShellArg "skills/${name}"}
           '') excludeSkills}
+          # The hook-mode helper (./hook-mode.sh), for its hooks to source as
+          # "''${CLAUDE_PLUGIN_ROOT}/lib/hook-mode.sh", reading the pinned jq.
+          if test -e lib/hook-mode.sh; then
+            echo "${manifest.name} already has lib/hook-mode.sh, where mkClaudePlugin puts its helper" >&2
+            exit 1
+          fi
+          mkdir -p lib
+          substitute ${./hook-mode.sh} lib/hook-mode.sh --subst-var-by jq ${pkgs.jq}/bin/jq
           runHook postPatch
         ''
     );

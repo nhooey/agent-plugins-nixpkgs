@@ -1,5 +1,6 @@
 # The flake's checks, one file per concern. Each takes the flake's `self` and the `pkgs` of the
-# system being checked (agent-plugins-cli also the dev shell's tool); tests/lib/helpers.sh holds the shell they share.
+# system being checked (agent-plugins-cli also the dev shell's tool); tests/lib/helpers.sh holds the shell they share,
+# and tests/lib/darwin-activation.nix the module evaluation the module's checks share.
 {
   self,
   pkgs,
@@ -10,6 +11,7 @@ let
     inherit self pkgs;
     helpers = ./lib/helpers.sh;
   };
+  activationText = import ./lib/darwin-activation.nix { inherit self pkgs; };
 in
 {
   vendored-plugins = import ./vendored-plugins.nix args;
@@ -19,6 +21,7 @@ in
   safety-net-home = import ./safety-net-home.nix args;
   cc-safety-net-hook = import ./cc-safety-net-hook.nix args;
   safety-net-rulebooks = import ./safety-net-rulebooks.nix args;
-  darwin-module = import ./darwin-module.nix args;
+  darwin-module = import ./darwin-module.nix (args // { inherit activationText; });
+  hook-mode = import ./hook-mode.nix (args // { inherit activationText; });
   agent-plugins-cli = import ./agent-plugins-cli.nix { inherit self pkgs agent-plugins; };
 }
