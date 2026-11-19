@@ -1,5 +1,6 @@
 # Each rulebook in safetyNetRulebooks passes its own `tests` fixtures, run through the packaged
-# Safety Net hook as Claude Code runs it, with only that rulebook installed. As in the skill
+# Safety Net hook as Claude Code runs it, with only that rulebook installed and `nix` as a
+# transparent wrapper, as the README recommends. As in the skill
 # repositories' `rulebook test`: a `blocked` fixture must be denied by its own rule
 # (`custom.<rulebook>/<rule>`), an `allowed` one must not be denied, and every rule needs a
 # `blocked` fixture.
@@ -13,7 +14,12 @@ let
   checkRulebook = name: rulebook: ''
     echo "rulebook ${name}"
     test "${rulebook.name}" = "${name}" || fail "safetyNetRulebooks.${name} is named ${rulebook.name}"
-    export CC_SAFETY_NET_HOME=${self.lib.mkSafetyNetHome pkgs [ rulebook ]}
+    export CC_SAFETY_NET_HOME=${
+      self.lib.mkSafetyNetHome pkgs {
+        rulebooks = [ rulebook ];
+        transparentWrappers = [ "nix" ];
+      }
+    }
     check_fixtures ${pkgs.writeText "${name}.json" (builtins.toJSON rulebook)}
   '';
 in

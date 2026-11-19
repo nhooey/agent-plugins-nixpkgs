@@ -23,10 +23,22 @@ let
     }
   ];
   home = self.lib.mkSafetyNetHome pkgs rulebooks;
+  wrapped = self.lib.mkSafetyNetHome pkgs {
+    inherit rulebooks;
+    transparentWrappers = [
+      "nix"
+      "secretspec"
+    ];
+  };
 in
 pkgs.runCommand "check-safety-net-home" { nativeBuildInputs = [ pkgs.jq ]; } ''
   source ${helpers}
   assert_json ${home}/rules/rule.json '. == {version: 1, rules: ["first", "second"]}' "rule.json"
+  assert_json ${wrapped}/rules/rule.json \
+    '. == {version: 1, rules: ["first", "second"], transparent_wrappers: ["nix", "secretspec"]}' \
+    "rule.json with transparent wrappers"
+  diff ${home}/rules/first/rulebook.json ${wrapped}/rules/first/rulebook.json \
+    || fail "transparent wrappers changed a rulebook"
   ${pkgs.lib.concatMapStrings (r: ''
     f=${home}/rules/${r.name}/rulebook.json
     test -f $f && ! test -L $f || fail "$f is not a regular file"

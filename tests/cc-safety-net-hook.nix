@@ -1,5 +1,6 @@
-# The hook, run as Claude Code runs it, denies rules from both rulebooks and a built-in rule
-# from the read-only home, and allows a harmless command.
+# The hook, run as Claude Code runs it, denies rules from every rulebook and a built-in rule
+# from the read-only home, applies a rule to its command run through `nix`, a transparent
+# wrapper, and allows harmless commands.
 {
   self,
   pkgs,
@@ -7,24 +8,51 @@
 }:
 let
   plugin = self.packages.${pkgs.stdenv.hostPlatform.system}.cc-safety-net;
-  home = self.lib.mkSafetyNetHome pkgs [
-    self.safetyNetRulebooks.git-avoid-sweeping-operations
-    {
-      rulebook_version = 1;
-      name = "check-rules";
-      version = "1.0.0";
-      allowed_commands = [ "git" ];
-      rules = [
-        {
-          name = "block-git-add-all";
-          command = "git";
-          subcommand = "add";
-          block_args = [ "-A" ];
-          reason = "check";
-        }
-      ];
-    }
-  ];
+  home = self.lib.mkSafetyNetHome pkgs {
+    rulebooks = [
+      self.safetyNetRulebooks.git-avoid-sweeping-operations
+      self.safetyNetRulebooks.git-avoid-sweeping-operations-with-exclusions
+      {
+        rulebook_version = 1;
+        name = "check-rules";
+        version = "1.0.0";
+        allowed_commands = [ "git" ];
+        rules = [
+          {
+            name = "block-git-describe-dirty";
+            command = "git";
+            subcommand = "describe";
+            block_args = [ "--dirty" ];
+            reason = "check";
+          }
+        ];
+      }
+      {
+        rulebook_version = 2;
+        name = "check-paths";
+        version = "1.0.0";
+        allowed_commands = [ "op" ];
+        rules = [
+          {
+            name = "op-item-get-format";
+            command = "op";
+            match = {
+              command_path = [
+                "item"
+                "get"
+              ];
+              any_args = [
+                "--format"
+                "--format=json"
+              ];
+            };
+            reason = "check";
+          }
+        ];
+      }
+    ];
+    transparentWrappers = [ "nix" ];
+  };
 in
 pkgs.runCommand "check-cc-safety-net-hook" { nativeBuildInputs = [ pkgs.jq ]; } ''
   source ${helpers}
@@ -50,15 +78,23 @@ pkgs.runCommand "check-cc-safety-net-hook" { nativeBuildInputs = [ pkgs.jq ]; } 
   }
 
   expect_deny 'git add -A' custom.git-avoid-sweeping-operations/add-sweep
-  expect_deny 'git -C repo add -A' custom.check-rules/block-git-add-all
+  expect_deny 'git describe --dirty' custom.check-rules/block-git-describe-dirty
   expect_deny 'git reset --hard' git.reset-hard
-  expect_deny 'git stash' custom.git-avoid-sweeping-operations/stash-sweep
+  expect_deny 'git stash' custom.git-avoid-sweeping-operations-with-exclusions/stash-sweep
+  expect_deny 'op item get X --format json' custom.check-paths/op-item-get-format
+  expect_deny 'nix develop --command op item get X --format json' custom.check-paths/op-item-get-format
 
-  # Allowed: exit 0 (checked by run) and no deny or ask decision.
-  run 'git status'
-  if test -s $TMPDIR/out; then
-    assert_json $TMPDIR/out '(.hookSpecificOutput.permissionDecision // "allow") == "allow"' "'git status' is allowed"
-  fi
+  # expect_allow COMMAND: exit 0 (checked by run) and no deny or ask decision.
+  expect_allow() {
+    run "$1"
+    if test -s $TMPDIR/out; then
+      assert_json $TMPDIR/out '(.hookSpecificOutput.permissionDecision // "allow") == "allow"' "'$1' is allowed"
+    fi
+  }
+
+  expect_allow 'git status'
+  expect_allow 'op item list --format json'
+  expect_allow 'nix develop --command op item list --format json'
 
   touch $out
 ''

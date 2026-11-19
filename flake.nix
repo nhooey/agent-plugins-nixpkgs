@@ -56,10 +56,9 @@
       url = "github:nhooey/git-skills";
       flake = false;
     };
-    # `integration` until shell-skills' chmod-numeric, op-read and gh-auth-token rules merge;
-    # then the default branch.
+    # Each on the repository's default branch.
     shell-skills-src = {
-      url = "github:nhooey/shell-skills/integration";
+      url = "github:nhooey/shell-skills";
       flake = false;
     };
   };
@@ -103,14 +102,23 @@
       );
 
       # CC Safety Net rulebooks as attribute sets, for services.agent-plugins.ccSafetyNet.rulebooks.
+      # shell-hygiene-secrets is exported once the pinned shell-skills-src has it.
       safetyNetRulebooks =
         let
-          rulebook = src: name: nixpkgs.lib.importJSON "${src}/.cc-safety-net/rules/${name}/rulebook.json";
+          path = src: name: "${src}/.cc-safety-net/rules/${name}/rulebook.json";
+          rulebook = src: name: nixpkgs.lib.importJSON (path src name);
         in
         {
           git-avoid-sweeping-operations = rulebook inputs.git-skills-src "git-avoid-sweeping-operations";
+          git-avoid-sweeping-operations-with-exclusions = rulebook inputs.git-skills-src "git-avoid-sweeping-operations-with-exclusions";
           shell-hygiene = rulebook inputs.shell-skills-src "shell-hygiene";
-        };
+        }
+        //
+          nixpkgs.lib.optionalAttrs
+            (builtins.pathExists (path inputs.shell-skills-src "shell-hygiene-secrets"))
+            {
+              shell-hygiene-secrets = rulebook inputs.shell-skills-src "shell-hygiene-secrets";
+            };
 
       darwinModules.default = import ./modules/darwin.nix { inherit self; };
 

@@ -2,7 +2,8 @@
 { lib }:
 {
   # A plugin directory (one holding .claude-plugin/plugin.json) copied into the store, with
-  # optional patches. The name and version come from the plugin's own manifest. The result is
+  # optional patches, and the hook-mode helper added as lib/hook-mode.sh (see ./hook-mode.sh).
+  # The name and version come from the plugin's own manifest. The result is
   # overridable, so a consumer can drop skills it doesn't want from a plugin it loads whole:
   #   packages.superpowers.override { excludeSkills = [ "diagnosing-superpowers" ]; }
   mkClaudePlugin =
@@ -34,6 +35,14 @@
           ${lib.concatMapStrings (name: ''
             rm -r ${lib.escapeShellArg "skills/${name}"}
           '') excludeSkills}
+          # The hook-mode helper (./hook-mode.sh), for its hooks to source as
+          # "''${CLAUDE_PLUGIN_ROOT}/lib/hook-mode.sh", reading the pinned jq.
+          if test -e lib/hook-mode.sh; then
+            echo "${manifest.name} already has lib/hook-mode.sh, where mkClaudePlugin puts its helper" >&2
+            exit 1
+          fi
+          mkdir -p lib
+          substitute ${./hook-mode.sh} lib/hook-mode.sh --subst-var-by jq ${pkgs.jq}/bin/jq
           runHook postPatch
         ''
     );
@@ -79,15 +88,33 @@
 
   # A CC Safety Net home folder (what CC_SAFETY_NET_HOME points at) holding rules/rule.json and
   # one rules/<name>/rulebook.json per rulebook, as real files: Safety Net refuses symlinked
-  # config files. `rulebooks` are rulebook.json contents as attribute sets.
+  # config files. The second argument is either the list of rulebooks (rulebook.json contents
+  # as attribute sets) or `{ rulebooks; transparentWrappers ? [ ]; }`, where each transparent
+  # wrapper, such as "nix", is a command whose protected child commands the rulebooks' rules
+  # also apply to (rule.json's `transparent_wrappers`).
   mkSafetyNetHome =
-    pkgs: rulebooks:
+    pkgs: arg:
     let
+      inherit
+        (
+          {
+            transparentWrappers = [ ];
+          }
+          // (if builtins.isList arg then { rulebooks = arg; } else arg)
+        )
+        rulebooks
+        transparentWrappers
+        ;
       ruleConfig = pkgs.writeText "rule.json" (
-        builtins.toJSON {
-          version = 1;
-          rules = map (r: r.name) rulebooks;
-        }
+        builtins.toJSON (
+          {
+            version = 1;
+            rules = map (r: r.name) rulebooks;
+          }
+          // lib.optionalAttrs (transparentWrappers != [ ]) {
+            transparent_wrappers = transparentWrappers;
+          }
+        )
       );
     in
     pkgs.runCommand "cc-safety-net-home" { } ''
