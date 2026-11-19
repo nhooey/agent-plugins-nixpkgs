@@ -11,7 +11,7 @@ let
     inherit self pkgs;
     helpers = ./lib/helpers.sh;
   };
-  activationText = import ./lib/darwin-activation.nix { inherit self pkgs; };
+  inherit (import ./lib/darwin-activation.nix { inherit self pkgs; }) evalConfig activationText;
 in
 {
   vendored-plugins = import ./vendored-plugins.nix args;
@@ -21,7 +21,7 @@ in
   safety-net-home = import ./safety-net-home.nix args;
   cc-safety-net-hook = import ./cc-safety-net-hook.nix args;
   safety-net-rulebooks = import ./safety-net-rulebooks.nix args;
-  darwin-module = import ./darwin-module.nix (args // { inherit activationText; });
+  darwin-module = import ./darwin-module.nix (args // { inherit evalConfig activationText; });
   hook-mode = import ./hook-mode.nix (args // { inherit activationText; });
   agent-plugins-cli = import ./agent-plugins-cli.nix { inherit self pkgs agent-plugins; };
 }

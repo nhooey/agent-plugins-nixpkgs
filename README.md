@@ -1,7 +1,8 @@
 # agent-plugins-nixpkgs
 
 Claude Code plugins packaged with Nix, and a nix-darwin module that installs them through Claude Code's managed settings.
-The plugins' code changes only when this flake's lock does, and no Claude session or user setting can turn them off.
+The plugins' code changes only when this flake's lock does.
+No Claude session or user setting can turn off a managed plugin; a user plugin is installed for you to enable, so `claude --plugin-dir` can override it.
 
 Its sibling for skills is [`skillspkgs`](https://github.com/nhooey/skillspkgs).
 
@@ -52,7 +53,10 @@ Claude Code loads the new build at the next session start.
   imports = [ inputs.agent-plugins-nixpkgs.darwinModules.default ];
   services.agent-plugins = {
     enable = true;
-    plugins = [ inputs.agent-plugins-nixpkgs.packages.aarch64-darwin.cc-safety-net ];
+    # Installed and enabled in the managed drop-in: no session can turn them off.
+    managedPlugins = [ inputs.agent-plugins-nixpkgs.packages.aarch64-darwin.cc-safety-net ];
+    # Installed only: enable them in your own settings, so `claude --plugin-dir` can override them.
+    userPlugins = [ inputs.agent-plugins-nixpkgs.packages.aarch64-darwin.coding-agent-kanban-turns ];
     # Optional: CC Safety Net rulebooks, served read-only from the store.
     ccSafetyNet.rulebooks = [
       {
@@ -77,17 +81,31 @@ Claude Code loads the new build at the next session start.
 
 On activation it writes `/Library/Application Support/ClaudeCode/managed-settings.d/<dropInName>`, owned by root, which:
 
-- registers a marketplace, `<marketplaceName>`, built in the store from the listed plugins (`extraKnownMarketplaces`, `"source": "directory"`)
-- enables each plugin as `<plugin>@<marketplaceName>` (`enabledPlugins`)
+- registers a marketplace, `<marketplaceName>`, built in the store from `managedPlugins` and `userPlugins` (`extraKnownMarketplaces`, `"source": "directory"`)
+- enables each of `managedPlugins` as `<plugin>@<marketplaceName>` (`enabledPlugins`), but not `userPlugins`
 - with rulebooks, sets `env.CC_SAFETY_NET_HOME` to a store folder holding them as real files, since Safety Net refuses symlinked config files, and `ccSafetyNet.transparentWrappers` as `rule.json`'s `transparent_wrappers`.
   Safety Net still writes its audit log to `~/.cc-safety-net/logs`.
 - sets `env.AGENT_HOOK_MODES` to `hook-modes.json` in the store, written from `hookModes` ([Hook modes](#hook-modes)); with no `hookModes` it holds `{}`.
-- merges in `extraSettings` last, so it can add any other managed setting or override these.
+- merges in `extraSettings` last, so it can add any other managed setting or override these, except that its `enabledPlugins` can't set a user plugin.
 
-The other options of `services.agent-plugins`:
+A plugin you develop goes in `userPlugins`, and you enable it in your own settings, such as `~/.claude/settings.json`:
+
+```json
+{ "enabledPlugins": { "coding-agent-kanban-turns@nix-pinned": true } }
+```
+
+A managed `enabledPlugins` entry locks the plugin's name, so `claude --plugin-dir` can't load a working copy over it (Claude Code's [plugin name conflicts](https://code.claude.com/docs/en/plugins/loading.md)); a user setting gives way to it.
+Evaluation fails an assertion naming the plugin when a plugin name is listed twice, in one list or across both, or when `extraSettings.enabledPlugins` sets a user plugin either way.
+`managedPlugins` was called `plugins`, and that name still sets it, with a warning; set together, the two merge.
+
+The options of `services.agent-plugins`:
 
 | Option                            | Default                   | Meaning                                                                         |
 | --------------------------------- | ------------------------- | ------------------------------------------------------------------------------- |
+| `enable`                          | `false`                   | Write the drop-in on activation.                                                |
+| `managedPlugins`                  | `[ ]`                     | Installed and enabled; no session can turn them off.                            |
+| `userPlugins`                     | `[ ]`                     | Installed only; enable each in your own settings.                               |
+| `ccSafetyNet.rulebooks`           | `[ ]`                     | CC Safety Net rulebooks, served read-only.                                      |
 | `marketplaceName`                 | `"nix-pinned"`            | Name of the generated marketplace.                                              |
 | `marketplaceOwner`                | `"nix"`                   | Owner name written into the marketplace manifest.                               |
 | `ccSafetyNet.transparentWrappers` | `[ ]`                     | Commands, such as `"nix"`, whose wrapped commands the rulebooks' rules apply to. |
@@ -174,7 +192,9 @@ Its tool, `agent-plugins`, takes the command tokens `build`, `check`, `fmt`, `li
 - `safety-net-home`: `mkSafetyNetHome` writes `rule.json`, with any transparent wrappers, and each rulebook as a regular file.
 - `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from `safetyNetRulebooks.git-avoid-sweeping-operations`, one from `git-avoid-sweeping-operations-with-exclusions`, rules from rulebooks written in the check, and a built-in rule, each by name; denies `nix develop --command op item get X --format json` with `nix` as a transparent wrapper; and allows `git status` and `op item list --format json`.
 - `safety-net-rulebooks`: each rulebook in `safetyNetRulebooks`, `git-avoid-sweeping-operations`, `git-avoid-sweeping-operations-with-exclusions` and `shell-hygiene`, passes its own `tests` fixtures through the hook, with `nix` as a transparent wrapper: a `blocked` fixture is denied by its own rule, an `allowed` one isn't denied, and every rule has a `blocked` fixture.
-- `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and the transparent wrappers, points `AGENT_HOOK_MODES` at `hook-modes.json` and merges `extraSettings`; disabled, it writes nothing.
+- `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in whose generated marketplace lists `managedPlugins` and `userPlugins` and which enables only `managedPlugins`, points `CC_SAFETY_NET_HOME` at the rulebooks and the transparent wrappers, points `AGENT_HOOK_MODES` at `hook-modes.json` and merges `extraSettings`; disabled, it writes nothing.
+  The old `plugins` name still sets `managedPlugins`, with a warning, and merges with it; with only `userPlugins`, nothing is enabled and the marketplace is still registered.
+  A plugin name listed twice, in one list or across both, fails an assertion, and so does a user plugin set in `extraSettings.enabledPlugins`.
 - `hook-mode`: a test plugin's hook (`tests/fixtures/hook-mode-plugin`), run with the `AGENT_HOOK_MODES` the module writes, denies at `deny`, adds context at `remind` and is silent at `off`; with no `hookModes`, no file, or a name or value the file lacks, every hook reports `remind`; and every plugin `mkClaudePlugin` builds here carries the helper.
 - `agent-plugins-cli`: the dev shell tool's unit tests of its argument parsing and the `nix` commands each token plans pass, its `--help` lists every token, and `update` rejects an input `flake.lock` lacks.
 - `formatting`: fails if `nix fmt` (treefmt running nixfmt and ruff) would change a file.

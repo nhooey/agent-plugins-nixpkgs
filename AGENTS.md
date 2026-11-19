@@ -9,6 +9,12 @@ Claude Code plugins packaged with Nix, and a nix-darwin module that installs the
 - `skills-devshell/` is the sub-flake whose skills `nix develop` installs in `.agents/skills/`: skillspkgs' `skill-packaging` combination, with no additions.
 - `devshell.nix` is the dev shell; `scripts/agent_plugins.py` is its `agent-plugins` tool.
 
+## Managed and user plugins
+
+A plugin someone develops goes in `userPlugins`, never `managedPlugins`: a managed
+`enabledPlugins` entry locks its name, so `claude --plugin-dir` can't load a working copy over it.
+The README's [nix-darwin module](README.md#nix-darwin-module) section has the options and an example.
+
 ## Build and test
 
 `nix develop` enters the dev shell and installs the agent skills; `menu` lists its commands.

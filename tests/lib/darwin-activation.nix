@@ -1,22 +1,37 @@
-# activationText CFG: the activation script the nix-darwin module writes for
-# services.agent-plugins = CFG, evaluated with the one nix-darwin option it sets declared here.
+# The nix-darwin module, evaluated with the nix-darwin options it sets declared here:
+# - evalConfig CFG: the configuration for services.agent-plugins = CFG;
+# - activationText CFG: the activation script the module writes for it.
 { self, pkgs }:
-cfg:
 let
   inherit (pkgs) lib;
 in
-(lib.evalModules {
-  modules = [
-    self.darwinModules.default
-    {
-      options.system.activationScripts.postActivation.text = lib.mkOption {
-        type = lib.types.lines;
-        default = "";
-      };
-      config = {
-        _module.args.pkgs = pkgs;
-        services.agent-plugins = cfg;
-      };
-    }
-  ];
-}).config.system.activationScripts.postActivation.text
+rec {
+  evalConfig =
+    cfg:
+    (lib.evalModules {
+      modules = [
+        self.darwinModules.default
+        {
+          options = {
+            system.activationScripts.postActivation.text = lib.mkOption {
+              type = lib.types.lines;
+              default = "";
+            };
+            warnings = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+            };
+            assertions = lib.mkOption {
+              type = lib.types.listOf lib.types.unspecified;
+              default = [ ];
+            };
+          };
+          config = {
+            _module.args.pkgs = pkgs;
+            services.agent-plugins = cfg;
+          };
+        }
+      ];
+    }).config;
+  activationText = cfg: (evalConfig cfg).system.activationScripts.postActivation.text;
+}

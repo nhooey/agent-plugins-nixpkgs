@@ -18,7 +18,7 @@ let
     name: hookModes:
     pkgs.writeText "activation-${name}" (activationText {
       enable = true;
-      plugins = [ plugin ];
+      managedPlugins = [ plugin ];
       inherit hookModes;
     });
   withModes = mode: activation mode { check-guard = mode; };
