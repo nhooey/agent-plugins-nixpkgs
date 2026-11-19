@@ -139,11 +139,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1794863810,
-        "narHash": "sha256-NXE1Q10P4a9xBAUYM27Ig/DFwlxnRJJtUKskuYak2OE=",
+        "lastModified": 1795070749,
+        "narHash": "sha256-I52f9/Y77IqTZiv1pztxkFEPYJ1oup2qRREF9KcSjNw=",
         "owner": "nhooey",
         "repo": "coding-agent-kanban-turns",
-        "rev": "b1145189f8a56bb79c02632b8bd4d8e20b590dc9",
+        "rev": "044a402f5820adb7fbed52f7c0e7be3d1784e32f",
         "type": "github"
       },
       "original": {
