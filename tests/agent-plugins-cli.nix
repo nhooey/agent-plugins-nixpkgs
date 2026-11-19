@@ -13,7 +13,7 @@ pkgs.runCommand "check-agent-plugins-cli"
     ];
   }
   ''
-    PYTHONPATH=${../scripts} python3 -m unittest discover -s ${./.} -p 'test_*.py' -v
+    PYTHONPATH=${../scripts} python3 -m unittest discover -s ${./.} -p 'test_agent_plugins.py' -v
 
     cp ${self}/flake.lock .
     help=$(agent-plugins --help)

@@ -1,6 +1,7 @@
-# The nix-darwin module, evaluated with the one nix-darwin option it sets declared here, writes
-# a drop-in that installs the marketplace, enables each plugin, points Safety Net at the
-# rulebooks and merges extraSettings; disabled, it writes nothing.
+# The nix-darwin module, evaluated with the nix-darwin options it sets declared here, writes a
+# drop-in that installs the marketplace, enables each plugin but the unmanaged ones, points
+# Safety Net at the rulebooks and merges extraSettings; disabled, it writes nothing. An
+# unmanaged name that matches no plugin fails an assertion.
 {
   self,
   pkgs,
@@ -9,7 +10,7 @@
 let
   inherit (pkgs) lib;
   p = self.packages.${pkgs.stdenv.hostPlatform.system};
-  activationText =
+  evalConfig =
     cfg:
     (lib.evalModules {
       modules = [
@@ -19,13 +20,21 @@ let
             type = lib.types.lines;
             default = "";
           };
+          options.assertions = lib.mkOption {
+            type = lib.types.listOf lib.types.unspecified;
+            default = [ ];
+          };
           config = {
             _module.args.pkgs = pkgs;
             services.agent-plugins = cfg;
           };
         }
       ];
-    }).config.system.activationScripts.postActivation.text;
+    }).config;
+  activationText = cfg: (evalConfig cfg).system.activationScripts.postActivation.text;
+  # The messages of the assertions that fail, which nix-darwin stops the build with.
+  failedAssertions =
+    cfg: map (a: a.message) (lib.filter (a: !a.assertion) (evalConfig cfg).assertions);
   enabled = pkgs.writeText "activation-enabled" (activationText {
     enable = true;
     plugins = [
@@ -45,6 +54,30 @@ let
     enable = true;
     plugins = [ p.superpowers ];
   });
+  unmanaged = {
+    enable = true;
+    plugins = [
+      p.cc-safety-net
+      p.superpowers
+    ];
+    unmanaged = [ "superpowers" ];
+  };
+  unmanagedActivation = pkgs.writeText "activation-unmanaged" (activationText unmanaged);
+  # extraSettings can't bring an unmanaged plugin back, under any marketplace, value or case.
+  unmanagedExtraActivation = pkgs.writeText "activation-unmanaged-extra" (
+    activationText (
+      unmanaged
+      // {
+        extraSettings.enabledPlugins = {
+          "superpowers@nix-pinned" = true;
+          "superpowers@elsewhere" = false;
+          "SuperPowers@elsewhere" = true;
+          "kept@elsewhere" = true;
+        };
+      }
+    )
+  );
+  badName = failedAssertions (unmanaged // { unmanaged = [ "superpower" ]; });
   disabled = activationText {
     enable = false;
     plugins = [ p.superpowers ];
@@ -52,6 +85,12 @@ let
   dropIns = "/Library/Application Support/ClaudeCode/managed-settings.d";
 in
 assert lib.assertMsg (disabled == "") "the disabled module still writes an activation script";
+assert lib.assertMsg (
+  failedAssertions unmanaged == [ ]
+) "an unmanaged name that matches a plugin fails an assertion";
+assert lib.assertMsg (
+  lib.length badName == 1 && lib.hasInfix ''"superpower"'' (lib.head badName)
+) "an unmanaged name that matches no plugin gives the failed assertions ${builtins.toJSON badName}";
 pkgs.runCommand "check-darwin-module" { nativeBuildInputs = [ pkgs.jq ]; } ''
   source ${helpers}
 
@@ -79,6 +118,15 @@ pkgs.runCommand "check-darwin-module" { nativeBuildInputs = [ pkgs.jq ]; } ''
   assert_json $s '.env == {}' "no CC_SAFETY_NET_HOME without rulebooks"
   assert_json "$(jq -r '.extraKnownMarketplaces["nix-pinned"].source.path' $s)/.claude-plugin/marketplace.json" \
     '.owner.name == "nix"' "default marketplace owner"
+
+  s=$(settings_of ${unmanagedActivation} 40-agent-plugins.json)
+  assert_json $s '.enabledPlugins == {"cc-safety-net@nix-pinned": true}' "an unmanaged plugin left out of enabledPlugins"
+  assert_json "$(jq -r '.extraKnownMarketplaces["nix-pinned"].source.path' $s)/.claude-plugin/marketplace.json" \
+    '[.plugins[].name] == ["cc-safety-net", "superpowers"]' "an unmanaged plugin kept in the marketplace"
+
+  s=$(settings_of ${unmanagedExtraActivation} 40-agent-plugins.json)
+  assert_json $s '.enabledPlugins == {"cc-safety-net@nix-pinned": true, "kept@elsewhere": true}' \
+    "extraSettings.enabledPlugins entries for an unmanaged plugin dropped"
 
   touch $out
 ''

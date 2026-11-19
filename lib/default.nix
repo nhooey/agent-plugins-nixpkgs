@@ -77,6 +77,24 @@
       fi
     '';
 
+  # A numtide devshell `commands` entry for a plugin repository: `claude-plugin-dev` runs
+  # `claude` with a `--plugin-dir` for each local plugin in the repository's
+  # .claude-plugin/marketplace.json, and its own arguments after them. It stops first if managed
+  # settings lock one of those plugins, since Claude Code would ignore its working copy. It runs
+  # the caller's `claude`, and adds nothing to the PATH that `claude` sees. A shell that isn't a
+  # numtide devshell takes the command from the entry's `package`.
+  claudePluginDevCommand = pkgs: {
+    name = "claude-plugin-dev";
+    category = "claude";
+    help = "run claude on this repository's plugins (--plugin-dir each); arguments go to claude";
+    package = pkgs.writeShellApplication {
+      name = "claude-plugin-dev";
+      text = ''
+        CLAUDE_PLUGIN_DEV_GIT="${lib.getExe pkgs.git}" exec "${lib.getExe pkgs.python3}" -I "${../scripts/claude_plugin_dev.py}" "$@"
+      '';
+    };
+  };
+
   # A CC Safety Net home folder (what CC_SAFETY_NET_HOME points at) holding rules/rule.json and
   # one rules/<name>/rulebook.json per rulebook, as real files: Safety Net refuses symlinked
   # config files. `rulebooks` are rulebook.json contents as attribute sets.

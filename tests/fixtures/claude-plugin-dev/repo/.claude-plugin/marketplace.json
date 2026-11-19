@@ -1,0 +1,9 @@
+{
+  "name": "fixture-market",
+  "owner": { "name": "fixture" },
+  "plugins": [
+    { "name": "alpha", "source": "./plugins/alpha" },
+    { "name": "beta", "source": "./beta" },
+    { "name": "remote", "source": { "source": "github", "repo": "example/remote" } }
+  ]
+}

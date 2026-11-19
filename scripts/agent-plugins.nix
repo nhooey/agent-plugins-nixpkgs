@@ -14,6 +14,6 @@ writeShellApplication {
   ];
   text = ''
     export AGENT_PLUGINS_SYSTEM=${stdenv.hostPlatform.system}
-    exec python3 ${./agent_plugins.py} "$@"
+    exec python3 -I ${./agent_plugins.py} "$@"
   '';
 }

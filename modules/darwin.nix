@@ -17,7 +17,7 @@ let
     inherit (cfg) plugins;
   };
   safetyNetHome = pluginLib.mkSafetyNetHome pkgs cfg.ccSafetyNet.rulebooks;
-  settings = lib.recursiveUpdate {
+  merged = lib.recursiveUpdate {
     extraKnownMarketplaces.${cfg.marketplaceName}.source = {
       source = "directory";
       path = "${marketplace}";
@@ -29,6 +29,21 @@ let
       CC_SAFETY_NET_HOME = "${safetyNetHome}";
     };
   } cfg.extraSettings;
+  # The name part of a plugin id (before its last `@`), lower-cased as Claude Code compares it.
+  idName =
+    id:
+    let
+      parts = lib.splitString "@" id;
+    in
+    lib.toLower (lib.concatStringsSep "@" (lib.init parts));
+  unmanagedNames = map lib.toLower cfg.unmanaged;
+  # Any entry naming an unmanaged plugin locks it, under any marketplace and with either value,
+  # so none is left, including those extraSettings adds.
+  settings = merged // {
+    enabledPlugins = lib.filterAttrs (id: _: !lib.elem (idName id) unmanagedNames) (
+      merged.enabledPlugins
+    );
+  };
 in
 {
   options.services.agent-plugins = {
@@ -39,6 +54,20 @@ in
       default = [ ];
       example = lib.literalExpression "[ inputs.agent-plugins-nixpkgs.packages.\${system}.cc-safety-net ]";
       description = "Plugins to install and enable. Each needs passthru.claudePluginName (mkClaudePlugin sets it).";
+    };
+
+    unmanaged = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "coding-agent-kanban-turns" ];
+      description = ''
+        Names (claudePluginName) of plugins in `plugins` to leave out of the managed
+        `enabledPlugins`, while they stay in the marketplace. A managed entry locks every plugin
+        of its name, so `claude --plugin-dir` can load a working copy of these only once they're
+        listed here. Every `enabledPlugins` entry of these names is dropped, under any
+        marketplace, including those `extraSettings` adds. A name that matches no plugin fails
+        an assertion.
+      '';
     };
 
     marketplaceName = lib.mkOption {
@@ -77,6 +106,18 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions =
+      let
+        names = map (p: p.claudePluginName) cfg.plugins;
+        unknown = lib.filter (n: !lib.elem n names) cfg.unmanaged;
+      in
+      [
+        {
+          assertion = unknown == [ ];
+          message = "services.agent-plugins.unmanaged names ${builtins.toJSON unknown}, which match no plugin in services.agent-plugins.plugins: ${builtins.toJSON names}.";
+        }
+      ];
+
     # Nix doesn't track the installed file: disabling the module leaves it in place, so remove it
     # by hand (with sudo) afterwards.
     system.activationScripts.postActivation.text = ''

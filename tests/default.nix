@@ -20,5 +20,6 @@ in
   cc-safety-net-hook = import ./cc-safety-net-hook.nix args;
   safety-net-rulebooks = import ./safety-net-rulebooks.nix args;
   darwin-module = import ./darwin-module.nix args;
+  claude-plugin-dev = import ./claude-plugin-dev.nix args;
   agent-plugins-cli = import ./agent-plugins-cli.nix { inherit self pkgs agent-plugins; };
 }

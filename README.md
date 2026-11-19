@@ -87,7 +87,8 @@ owned by root, which:
 
 - registers a marketplace, `<marketplaceName>`, built in the store from the listed plugins
   (`extraKnownMarketplaces`, `"source": "directory"`)
-- enables each plugin as `<plugin>@<marketplaceName>` (`enabledPlugins`)
+- enables each plugin as `<plugin>@<marketplaceName>` (`enabledPlugins`), except those named in
+  `unmanaged`
 - with rulebooks, sets `env.CC_SAFETY_NET_HOME` to a store folder holding them as real files,
   since Safety Net refuses symlinked config files. Safety Net still writes its audit log to
   `~/.cc-safety-net/logs`.
@@ -97,6 +98,7 @@ The other options of `services.agent-plugins`:
 
 | Option             | Default                   | Meaning                                              |
 | ------------------ | ------------------------- | ---------------------------------------------------- |
+| `unmanaged`        | `[ ]`                     | Plugin names left out of `enabledPlugins`.           |
 | `marketplaceName`  | `"nix-pinned"`            | Name of the generated marketplace.                   |
 | `marketplaceOwner` | `"nix"`                   | Owner name written into the marketplace manifest.    |
 | `extraSettings`    | `{ }`                     | More managed settings merged into the drop-in.       |
@@ -120,6 +122,58 @@ ccSafetyNet.rulebooks = [
 Nix doesn't track the drop-in: disabling the module leaves it in place, so delete it with `sudo`
 afterwards.
 
+## Developing a plugin
+
+A managed `enabledPlugins` entry beats every other source, and Claude Code matches plugins by
+manifest name, so while the drop-in enables `<plugin>@nix-pinned`, `claude --plugin-dir` on that
+plugin's checkout is ignored ("plugin is locked by managed settings"). To work on one of the
+pinned plugins, take it out of managed settings and run its checkout instead:
+
+1. Name it in `unmanaged`, and switch:
+
+   ```nix
+   services.agent-plugins.unmanaged = [ "coding-agent-kanban-turns" ];
+   ```
+
+   Every `enabledPlugins` entry of that name leaves the drop-in, under any marketplace and
+   including those `extraSettings` adds, but the plugin stays in the marketplace. So its pinned
+   build is still there to enable, in user settings, for sessions that don't load the checkout;
+   a `--plugin-dir` copy replaces it in the sessions that do. Every other plugin stays managed.
+   A name that matches no plugin in `plugins` fails the build, so a typo can't silently do
+   nothing.
+
+2. In the plugin's repository, run `claude-plugin-dev` from its dev shell. It:
+
+   - finds each local plugin in the repository's `.claude-plugin/marketplace.json`, resolving
+     each relative `source` against the repository root
+   - reads the managed settings: `managed-settings.json` and every `*.json` in
+     `managed-settings.d/`, under `/Library/Application Support/ClaudeCode` or
+     `CLAUDE_PLUGIN_DEV_MANAGED_SETTINGS`
+   - stops without starting `claude` if any entry there, `true` or `false`, names one of those
+     plugins (by name, ignoring case, as Claude Code compares them). For an entry in a drop-in
+     under the module's marketplace (`nix-pinned`, or `CLAUDE_PLUGIN_DEV_MARKETPLACE`), it prints
+     the `unmanaged` line to add; for any other, it says to remove that entry from its file.
+   - otherwise starts `claude` with a `--plugin-dir` for each plugin, followed by its own
+     arguments
+
+3. Edit the plugin in place. A mod's hooks module reloads on save, and `/reload-plugins` picks up
+   hooks, skills, commands and agents without a restart.
+
+Claude Code writes TypeScript types for a `--plugin-dir` mod into
+`<plugin>/.claude-plugin/types/`, so add that folder to the plugin repository's `.gitignore`.
+
+The command comes from `lib.claudePluginDevCommand pkgs`, a
+[numtide devshell](https://github.com/numtide/devshell) `commands` entry:
+
+```nix
+devshells.default.commands = [ (claudePlugins.claudePluginDevCommand pkgs) ];
+```
+
+where `claudePlugins` is this flake's `lib`, or `import "${inputs.agent-plugins-nixpkgs}/lib" {
+inherit lib; }` from a `flake = false` input. Another kind of shell takes the command from the
+entry's `package`: `packages = [ (claudePlugins.claudePluginDevCommand pkgs).package ];`. It runs
+the `claude` on the caller's `PATH` and adds nothing to the `PATH` that `claude` sees.
+
 ## Library
 
 - `lib.mkClaudePlugin pkgs { src, excludeSkills ? [ ], postPatch ? "" }`: copies a plugin directory
@@ -128,6 +182,9 @@ afterwards.
   `.override`.
 - `lib.mkMarketplace pkgs { name, owner, plugins }`: a local marketplace listing the plugins.
 - `lib.mkSafetyNetHome pkgs rulebooks`: a CC Safety Net home folder for `CC_SAFETY_NET_HOME`.
+- `lib.claudePluginDevCommand pkgs`: the `claude-plugin-dev` dev shell command, as a numtide
+  devshell `commands` entry whose `package` is the command itself; see
+  [Developing a plugin](#developing-a-plugin).
 
 ## Dev shell
 
@@ -156,9 +213,15 @@ with shared shell in `tests/lib/helpers.sh`:
   through the hook: a `blocked` fixture is denied by its own rule, an `allowed` one isn't denied,
   and every rule has a `blocked` fixture.
 - `darwin-module`: the nix-darwin module, evaluated on its own, writes a drop-in that enables each
-  plugin from the generated marketplace, points `CC_SAFETY_NET_HOME` at the rulebooks and merges
-  `extraSettings`; disabled, it writes nothing.
-- `agent-plugins-cli`: the dev shell tool's unit tests of its argument parsing and the `nix`
+  plugin from the generated marketplace but the `unmanaged` ones, which stay in the marketplace,
+  points `CC_SAFETY_NET_HOME` at the rulebooks and merges `extraSettings`, which can't bring an
+  unmanaged plugin back; disabled, it writes nothing. An `unmanaged` name that matches no plugin
+  fails an assertion.
+- `claude-plugin-dev`: the command's unit tests pass, and run in a fixture repository with a stub
+  `claude`, it passes a `--plugin-dir` per local plugin and then its own arguments, or, with
+  fixture managed settings naming one of those plugins, exits non-zero without starting
+  `claude`, printing the `unmanaged` line for the module's entries and a removal for any other.
+- `agent-plugins-cli`: the `agent-plugins` tool's unit tests of its argument parsing and the `nix`
   commands each token plans pass, its `--help` lists every token, and `update` rejects an input
   `flake.lock` lacks.
 - `formatting`: fails if `nix fmt` (treefmt running nixfmt and ruff) would change a file.
