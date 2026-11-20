@@ -52,6 +52,9 @@ let
     userPlugins = [
       p.superpowers
       p.agentree-statusline
+      p.claffeinate
+      p.terminal-width
+      p.nix-devshell-cached-exports
     ];
   });
   # A different build of superpowers, with the same plugin name.
@@ -149,14 +152,22 @@ pkgs.runCommand "check-darwin-module" { nativeBuildInputs = [ pkgs.jq ]; } ''
   assert_json $s '.enabledPlugins == {}' "user plugins only: nothing enabled"
   market=$(jq -r '.extraKnownMarketplaces["nix-pinned"].source.path' $s)
   assert_json $market/.claude-plugin/marketplace.json \
-    '[.plugins[].name] == ["superpowers", "agentree-statusline"]' "user plugins only: the marketplace is still registered and lists them"
-  # Each module the mod's hooks.json registers is in the marketplace copy.
-  hooks=$market/agentree-statusline/hooks
-  modules=$(jq -r '.modules[]' $hooks/hooks.json)
-  test -n "$modules" || fail "agentree-statusline@nix-pinned registers no module"
-  while IFS= read -r module; do
-    test -f "$hooks/$module" || fail "agentree-statusline@nix-pinned lacks hooks/$module"
-  done <<< "$modules"
+    '[.plugins[].name] == ["superpowers", "agentree-statusline", "claffeinate", "terminal-width", "nix-devshell-cached-exports"]' \
+    "user plugins only: the marketplace is still registered and lists them"
+  # Each module the mods' hooks.json registers is in the marketplace copy.
+  for mod in agentree-statusline terminal-width; do
+    hooks=$market/$mod/hooks
+    modules=$(jq -r '.modules[]' $hooks/hooks.json)
+    test -n "$modules" || fail "$mod@nix-pinned registers no module"
+    while IFS= read -r module; do
+      test -f "$hooks/$module" || fail "$mod@nix-pinned lacks hooks/$module"
+    done <<< "$modules"
+  done
+  # What the plugins run keeps its executable bit in the marketplace copy: claffeinate's command,
+  # which its skills run from PATH, and the hooks nix-devshell-cached-exports runs directly.
+  for f in claffeinate/bin/claffeinate nix-devshell-cached-exports/hooks/{session-start,subagent-start,pre-tool-use}.sh; do
+    test -x "$market/$f" || fail "$f isn't executable in the marketplace"
+  done
 
   touch $out
 ''

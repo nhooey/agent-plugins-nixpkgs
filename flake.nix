@@ -7,8 +7,9 @@
   # 2. FIRST-PARTY plugins: a repository that exports its plugin as a flake package of its own
   #    is taken as an input and passed through: coding-agent-skills and git-skills, each as its
   #    `hooks-plugin` package, and coding-agent-kanban-turns as its `plugin` package.
-  #    agentree-statusline is the exception: pkgs/ builds it from the `flake = false`
-  #    agentree-statusline-src input, as it does the vendored plugins.
+  #    agentree-statusline, claffeinate, terminal-width and nix-devshell-cached-exports are the
+  #    exception: their flakes export no plugin package with the passthru the module reads, so
+  #    pkgs/ builds them from `flake = false` *-src inputs, as it does the vendored plugins.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Only for the checks that evaluate flakeModules.claudePlugin in a consumer flake.
@@ -41,7 +42,7 @@
     };
     # ---- first-party plugin repositories ----
     # On their default branches. Flakes for their `hooks-plugin` or `plugin` packages (packages
-    # below), except agentree-statusline-src, a plain source pkgs/ builds with mkClaudePlugin.
+    # below), except the *-src ones, plain sources pkgs/ builds with mkClaudePlugin.
     # git-skills' rulebook still comes from git-skills-src below, at its own pin.
     coding-agent-skills = {
       url = "github:nhooey/coding-agent-skills";
@@ -51,17 +52,36 @@
       url = "github:nhooey/git-skills";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # The kanban turn responses' mod, as its `plugin` package. It reads this flake as a plain
-    # source for `lib.mkClaudePlugin`, so its input here follows nothing back.
+    # The kanban turn responses' mod, as its `plugin` package, which it builds with this flake's
+    # flakeModules.claudePlugin. Its agent-plugins-nixpkgs input follows this flake (`""`), so
+    # the lock doesn't hold another copy of this repository, with all its inputs, inside it.
     coding-agent-kanban-turns = {
       url = "github:nhooey/coding-agent-kanban-turns";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+        treefmt-nix.follows = "treefmt-nix";
+        agent-plugins-nixpkgs.follows = "";
+      };
     };
     # The agent tree status line's mod, built in pkgs/ from its plugin/ folder with
     # lib.mkClaudePlugin, for the passthru the module reads. A plain source: its flake's
     # dev-shell inputs aren't needed here.
     agentree-statusline-src = {
       url = "github:nhooey/agentree-statusline";
+      flake = false;
+    };
+    # Plugins whose repository root is the plugin, built in pkgs/ like agentree-statusline.
+    claffeinate-src = {
+      url = "github:nhooey/claffeinate";
+      flake = false;
+    };
+    claude-code-terminal-width-src = {
+      url = "github:nhooey/claude-code-terminal-width";
+      flake = false;
+    };
+    nix-devshell-cached-exports-src = {
+      url = "github:nhooey/nix-devshell-cached-exports";
       flake = false;
     };
 
