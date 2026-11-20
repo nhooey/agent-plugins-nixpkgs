@@ -1,0 +1,5 @@
+{
+  "name": "include-check",
+  "version": "0.1.0",
+  "description": "A test plugin for the include check: a TypeScript-shaped tree of which only the default include paths are copied."
+}

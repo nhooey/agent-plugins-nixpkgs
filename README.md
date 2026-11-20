@@ -171,8 +171,36 @@ These three still read their mode from a line in their skill's preferences file;
 
 ## Library
 
-- `lib.mkClaudePlugin pkgs { src, excludeSkills ? [ ], postPatch ? "" }`: copies a plugin directory into the store, removes the `skills/` directories named in `excludeSkills`, adds the hook-mode helper as `lib/hook-mode.sh` with a pinned `jq` (a plugin that already has that file fails the build), runs `postPatch`, and reads its name and version from `.claude-plugin/plugin.json`.
+- `lib.mkClaudePlugin pkgs { src, include ? null, excludeSkills ? [ ], postPatch ? "" }`: copies a plugin directory into the store, removes the `skills/` directories named in `excludeSkills`, adds the hook-mode helper as `lib/hook-mode.sh` with a pinned `jq` (a plugin that already has that file fails the build), runs `postPatch`, and reads its name and version from `.claude-plugin/plugin.json`.
   The result is overridable with `.override`.
+  With `include`, a list of paths relative to `src`, only those are copied, through `lib.fileset`, and any that don't exist are skipped, so a plugin's repository can leave its tests, docs and flake out of the build; `src` must then be a path, such as `./.`.
+  Without it, all of `src` is copied.
+- `flakeModules.claudePlugin`: a [flake-parts](https://flake.parts/) module for a plugin's own repository.
+  Its `perSystem` option `agent-plugins.claudePlugin` builds the plugin with `mkClaudePlugin` as `packages.<packageName>`, ready for `services.agent-plugins.userPlugins` or `managedPlugins`.
+  When the flake also imports numtide devshell's flake module, it adds a `plugin-build` command to `devshells.default`, which runs `nix build "$PRJ_ROOT#<packageName>" --out-link "$PRJ_ROOT/result-plugin"`; without devshell, nothing is added.
+
+  | Option        | Default                                                                  | Meaning                                         |
+  | ------------- | ------------------------------------------------------------------------ | ----------------------------------------------- |
+  | `enable`      | `false`                                                                  | Build the plugin.                               |
+  | `src`         | —                                                                        | The plugin's root, as a path such as `./.`.     |
+  | `include`     | `[ ".claude-plugin/plugin.json" "defaults" "hooks" "src" "types" ]`      | Paths under `src` to copy; missing are skipped. |
+  | `packageName` | `"plugin"`                                                               | The package's name.                             |
+
+  ```nix
+  outputs =
+    { flake-parts, ... }@inputs:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [
+        inputs.agent-plugins-nixpkgs.flakeModules.claudePlugin
+        inputs.devshell.flakeModule
+      ];
+      systems = import inputs.systems;
+      perSystem.agent-plugins.claudePlugin = {
+        enable = true;
+        src = ./.;
+      };
+    };
+  ```
 - `lib.mkMarketplace pkgs { name, owner, plugins }`: a local marketplace listing the plugins.
 - `lib.mkSafetyNetHome pkgs rulebooks`, or `lib.mkSafetyNetHome pkgs { rulebooks, transparentWrappers ? [ ] }`: a CC Safety Net home folder for `CC_SAFETY_NET_HOME`.
 
@@ -188,6 +216,8 @@ Its tool, `agent-plugins`, takes the command tokens `build`, `check`, `fmt`, `li
 - `vendored-plugins`: each plugin's name, version and derivation name come from its manifest, Safety Net's hook runs the pinned node, and `excludeSkills` removes exactly the skill it names.
 - `first-party-plugins`: each passed-through hooks plugin is named by its manifest, and holds every script its `hooks.json` runs.
 - `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
+- `mk-claude-plugin-include`: `include` copies only the paths it lists, skips those the plugin lacks, and still adds the hook-mode helper; without it, the whole source is copied.
+- `claude-plugin-flake-module`: `flakeModules.claudePlugin`, in minimal flake-parts consumers, builds `packages.plugin` with the default `include`, adds the `plugin-build` command only when devshell's flake module is imported, and adds nothing when disabled.
 - `marketplace`: `mkMarketplace` lists each plugin's name, source and version, and links each to its build.
 - `safety-net-home`: `mkSafetyNetHome` writes `rule.json`, with any transparent wrappers, and each rulebook as a regular file.
 - `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from `safetyNetRulebooks.git-avoid-sweeping-operations`, one from `git-avoid-sweeping-operations-with-exclusions`, rules from rulebooks written in the check, and a built-in rule, each by name; denies `nix develop --command op item get X --format json` with `nix` as a transparent wrapper; and allows `git status` and `op item list --format json`.

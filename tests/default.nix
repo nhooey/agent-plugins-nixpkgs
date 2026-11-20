@@ -17,6 +17,8 @@ in
   vendored-plugins = import ./vendored-plugins.nix args;
   first-party-plugins = import ./first-party-plugins.nix args;
   exclude-skills-unknown-name = import ./exclude-skills-unknown-name.nix args;
+  mk-claude-plugin-include = import ./mk-claude-plugin-include.nix args;
+  claude-plugin-flake-module = import ./claude-plugin-flake-module.nix args;
   marketplace = import ./marketplace.nix args;
   safety-net-home = import ./safety-net-home.nix args;
   cc-safety-net-hook = import ./cc-safety-net-hook.nix args;

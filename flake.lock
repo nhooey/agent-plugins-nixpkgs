@@ -88,7 +88,7 @@
     "agent-skill-flake_3": {
       "inputs": {
         "devshell": "devshell_4",
-        "flake-parts": "flake-parts_5",
+        "flake-parts": "flake-parts_6",
         "nixpkgs": [
           "git-skills",
           "nixpkgs"
@@ -351,6 +351,26 @@
     "flake-parts_5": {
       "inputs": {
         "nixpkgs-lib": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793576659,
+        "narHash": "sha256-V1h85lUaJBQoHFrB2vpXZOE0Ju1MYSnIpsehoVZYlDo=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "ea2630b7470978622c7689a1ff75d2b389175399",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
+    "flake-parts_6": {
+      "inputs": {
+        "nixpkgs-lib": [
           "git-skills",
           "agent-skill-flake",
           "nixpkgs"
@@ -370,7 +390,7 @@
         "type": "github"
       }
     },
-    "flake-parts_6": {
+    "flake-parts_7": {
       "inputs": {
         "nixpkgs-lib": [
           "git-skills",
@@ -395,7 +415,7 @@
       "inputs": {
         "agent-plugins-nixpkgs": "agent-plugins-nixpkgs_2",
         "agent-skill-flake": "agent-skill-flake_3",
-        "flake-parts": "flake-parts_6",
+        "flake-parts": "flake-parts_7",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -454,6 +474,7 @@
         "coding-agent-kanban-turns": "coding-agent-kanban-turns",
         "coding-agent-skills": "coding-agent-skills",
         "devshell": "devshell_3",
+        "flake-parts": "flake-parts_5",
         "git-skills": "git-skills",
         "git-skills-src": "git-skills-src",
         "nixpkgs": "nixpkgs",

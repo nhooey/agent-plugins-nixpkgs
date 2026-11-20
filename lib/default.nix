@@ -14,11 +14,24 @@
         # Names of directories under skills/ to leave out. A name the plugin doesn't have is an
         # error, so a rename upstream can't silently bring a skill back.
         excludeSkills ? [ ],
+        # Paths relative to `src` to copy, leaving the rest of a repository out; null copies
+        # all of `src`. A path that doesn't exist is skipped. Needs `src` as a path, such as ./.
+        include ? null,
         # Shell run in the copy, e.g. to point a hook at a store path.
         postPatch ? "",
       }:
       let
         manifest = lib.importJSON "${src}/.claude-plugin/plugin.json";
+        copied =
+          if include == null then
+            src
+          else if !builtins.isPath src then
+            throw "mkClaudePlugin: `include` needs `src` as a path, such as ./., not ${builtins.typeOf src}"
+          else
+            lib.fileset.toSource {
+              root = src;
+              fileset = lib.fileset.unions (lib.filter builtins.pathExists (map (p: src + "/${p}") include));
+            };
       in
       pkgs.runCommand "claude-plugin-${manifest.name}-${manifest.version}"
         {
@@ -29,7 +42,7 @@
           };
         }
         ''
-          cp -r ${src} $out
+          cp -r ${copied} $out
           chmod -R u+w $out
           cd $out
           ${lib.concatMapStrings (name: ''
