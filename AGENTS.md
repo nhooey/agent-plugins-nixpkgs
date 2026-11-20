@@ -5,7 +5,7 @@ Claude Code plugins packaged with Nix, and a nix-darwin module that installs the
 
 - `pkgs/` builds the vendored third-party plugins from the `flake = false` `*-src` inputs.
 - `lib/` holds `mkClaudePlugin`, `mkMarketplace` and `mkSafetyNetHome`.
-- `modules/darwin.nix` is the nix-darwin module.
+- `modules/darwin.nix` is the nix-darwin module; `modules/claude-plugin.nix` is `flakeModules.claudePlugin`, the flake-parts module a plugin's own repository imports.
 - `skills-devshell/` is the sub-flake whose skills `nix develop` installs in `.agents/skills/`: skillspkgs' `skill-packaging` combination, with no additions.
 - `devshell.nix` is the dev shell; `scripts/agent_plugins.py` is its `agent-plugins` tool.
 

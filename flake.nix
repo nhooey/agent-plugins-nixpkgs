@@ -9,6 +9,11 @@
   #    `hooks-plugin` package, and coding-agent-kanban-turns as its `plugin` package.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Only for the checks that evaluate flakeModules.claudePlugin in a consumer flake.
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
     devshell = {
       url = "github:numtide/devshell";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -121,6 +126,10 @@
             };
 
       darwinModules.default = import ./modules/darwin.nix { inherit self; };
+
+      # For a plugin's own repository: builds its plugin folder as packages.plugin, and adds a
+      # `plugin-build` devshell command when numtide devshell's flake module is imported too.
+      flakeModules.claudePlugin = import ./modules/claude-plugin.nix { inherit self; };
 
       formatter = forAllSystems (pkgs: treefmt.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
 
