@@ -36,6 +36,15 @@ in
           ];
           description = "Paths relative to `src` copied into the plugin; one that doesn't exist is skipped.";
         };
+        postPatch = mkOption {
+          type = types.lines;
+          default = "";
+          example = lib.literalExpression ''"cp ''${pluginVendor}/* vendor/"'';
+          description = ''
+            Shell run in the plugin's copy, after the hook-mode helper is added, to add or change
+            files, such as bundles built by another derivation.
+          '';
+        };
         packageName = mkOption {
           type = types.str;
           default = "plugin";
@@ -47,7 +56,7 @@ in
         lib.mkMerge [
           {
             packages.${cfg.packageName} = self.lib.mkClaudePlugin pkgs {
-              inherit (cfg) src include;
+              inherit (cfg) src include postPatch;
             };
           }
           # Only with devshell's flake module imported, so a consumer without it still evaluates.

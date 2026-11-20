@@ -190,6 +190,7 @@ These three still read their mode from a line in their skill's preferences file;
   | `enable`      | `false`                                                                  | Build the plugin.                               |
   | `src`         | —                                                                        | The plugin's root, as a path such as `./.`.     |
   | `include`     | `[ ".claude-plugin/plugin.json" "defaults" "hooks" "src" "types" ]`      | Paths under `src` to copy; missing are skipped. |
+  | `postPatch`   | `""`                                                                     | Shell run in the copy, as `mkClaudePlugin`'s.   |
   | `packageName` | `"plugin"`                                                               | The package's name.                             |
 
   ```nix
@@ -223,7 +224,7 @@ Its tool, `agent-plugins`, takes the command tokens `build`, `check`, `fmt`, `li
 - `first-party-plugins`: each passed-through hooks plugin is named by its manifest, and holds every script its `hooks.json` runs; `agentree-statusline`, `claffeinate`, `terminal-width` and `nix-devshell-cached-exports` are named by their manifests, hold only the paths their `include` lists, and hold every module their `hooks.json` registers and every script it runs; `claffeinate`'s scripts put the pinned `jq` on their PATH, and `nix-devshell-cached-exports`' hooks run the pinned command with none on PATH.
 - `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
 - `mk-claude-plugin-include`: `include` copies only the paths it lists, skips those the plugin lacks, and still adds the hook-mode helper; without it, the whole source is copied.
-- `claude-plugin-flake-module`: `flakeModules.claudePlugin`, in minimal flake-parts consumers, builds `packages.plugin` with the default `include`, adds the `plugin-build` command only when devshell's flake module is imported, and adds nothing when disabled.
+- `claude-plugin-flake-module`: `flakeModules.claudePlugin`, in minimal flake-parts consumers, builds `packages.plugin` with the default `include`, puts a file `postPatch` writes in the package, adds the `plugin-build` command only when devshell's flake module is imported, and adds nothing when disabled.
 - `marketplace`: `mkMarketplace` lists each plugin's name, source and version, and links each to its build.
 - `safety-net-home`: `mkSafetyNetHome` writes `rule.json`, with any transparent wrappers, and each rulebook as a regular file.
 - `cc-safety-net-hook`: the hook, run the way Claude Code runs it, denies a rule from `safetyNetRulebooks.git-avoid-sweeping-operations`, one from `git-avoid-sweeping-operations-with-exclusions`, rules from rulebooks written in the check, and a built-in rule, each by name; denies `nix develop --command op item get X --format json` with `nix` as a transparent wrapper; and allows `git status` and `op item list --format json`.
