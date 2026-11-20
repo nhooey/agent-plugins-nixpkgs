@@ -21,7 +21,13 @@
         postPatch ? "",
       }:
       let
-        manifest = lib.importJSON "${src}/.claude-plugin/plugin.json";
+        # A path is read in place: interpolating it would copy all of `src` into the store.
+        manifest = lib.importJSON (
+          if builtins.isPath src then
+            src + "/.claude-plugin/plugin.json"
+          else
+            "${src}/.claude-plugin/plugin.json"
+        );
         copied =
           if include == null then
             src

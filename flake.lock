@@ -110,6 +110,22 @@
         "type": "github"
       }
     },
+    "agentree-statusline-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795182833,
+        "narHash": "sha256-+79glyswb89p6eWOca+5dM8NMpUxm+u89qxuajz4GjY=",
+        "owner": "nhooey",
+        "repo": "agentree-statusline",
+        "rev": "5062c1a50d66ba05ccebe9eca1d880c198a7fea8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nhooey",
+        "repo": "agentree-statusline",
+        "type": "github"
+      }
+    },
     "cc-safety-net-src": {
       "flake": false,
       "locked": {
@@ -470,6 +486,7 @@
     },
     "root": {
       "inputs": {
+        "agentree-statusline-src": "agentree-statusline-src",
         "cc-safety-net-src": "cc-safety-net-src",
         "coding-agent-kanban-turns": "coding-agent-kanban-turns",
         "coding-agent-skills": "coding-agent-skills",

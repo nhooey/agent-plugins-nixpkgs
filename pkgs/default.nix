@@ -1,6 +1,6 @@
 # Vendored third-party plugins: upstream ships no Nix package, so they're built here from the
 # `flake = false` *-src inputs that flake.lock pins. First-party plugins, at the end, are passed
-# through from their repositories' flakes.
+# through from their repositories' flakes, except agentree-statusline, built from its *-src input.
 {
   pkgs,
   inputs,
@@ -56,8 +56,25 @@ in
     git-skills-hooks = inputs.git-skills.packages.${system}.hooks-plugin;
   }
 )
-# First-party plugins with code of their own, each its repository's `plugin` package.
+# First-party plugins with code of their own: coding-agent-kanban-turns is its repository's
+# `plugin` package, and agentree-statusline is built here.
 // {
   coding-agent-kanban-turns =
     inputs.coding-agent-kanban-turns.packages.${pkgs.stdenv.hostPlatform.system}.plugin;
+
+  # The agent tree status line: the session and its subagents as a live tree above the prompt.
+  # Built here from its repository's plugin/ folder, whose own `plugin` package lacks the
+  # passthru the module reads. `include` copies only what the engine loads, leaving out its
+  # tests, tools and npm files, and needs `src` as a path: a flake input's outPath is a store
+  # path string, so it's made a path, which reads the files the lock already fetched.
+  agentree-statusline = mkClaudePlugin {
+    src = /. + builtins.unsafeDiscardStringContext "${inputs.agentree-statusline-src}/plugin";
+    include = [
+      ".claude-plugin/plugin.json"
+      "defaults"
+      "hooks"
+      "src"
+      "types"
+    ];
+  };
 }
