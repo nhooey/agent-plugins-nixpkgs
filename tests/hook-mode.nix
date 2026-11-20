@@ -36,6 +36,9 @@ let
     plugin
     p.agentree-statusline
     p.cc-safety-net
+    p.claffeinate
+    p.nix-devshell-cached-exports
+    p.terminal-width
     p.superpowers
     p.trailofbits-insecure-defaults
     p.trailofbits-sharp-edges

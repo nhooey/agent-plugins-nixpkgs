@@ -3,7 +3,7 @@
 Claude Code plugins packaged with Nix, and a nix-darwin module that installs them through Claude Code's managed settings.
 [README.md](README.md) describes the packages, the module and the library.
 
-- `pkgs/` builds the vendored third-party plugins, and `agentree-statusline`, from the `flake = false` `*-src` inputs, and passes the other first-party plugins through from their repositories' flakes.
+- `pkgs/` builds the vendored third-party plugins, and `agentree-statusline`, `claffeinate`, `terminal-width` and `nix-devshell-cached-exports`, from the `flake = false` `*-src` inputs, and passes the other first-party plugins through from their repositories' flakes.
 - `lib/` holds `mkClaudePlugin`, `mkMarketplace` and `mkSafetyNetHome`.
 - `modules/darwin.nix` is the nix-darwin module; `modules/claude-plugin.nix` is `flakeModules.claudePlugin`, the flake-parts module a plugin's own repository imports.
 - `skills-devshell/` is the sub-flake whose skills `nix develop` installs in `.agents/skills/`: skillspkgs' `skill-packaging` combination, with no additions.

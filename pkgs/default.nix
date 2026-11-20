@@ -1,6 +1,6 @@
 # Vendored third-party plugins: upstream ships no Nix package, so they're built here from the
 # `flake = false` *-src inputs that flake.lock pins. First-party plugins, at the end, are passed
-# through from their repositories' flakes, except agentree-statusline, built from its *-src input.
+# through from their repositories' flakes, except those built here from their own *-src inputs.
 {
   pkgs,
   inputs,
@@ -57,7 +57,7 @@ in
   }
 )
 # First-party plugins with code of their own: coding-agent-kanban-turns is its repository's
-# `plugin` package, and agentree-statusline is built here.
+# `plugin` package, and the rest are built here.
 // {
   coding-agent-kanban-turns =
     inputs.coding-agent-kanban-turns.packages.${pkgs.stdenv.hostPlatform.system}.plugin;
@@ -77,4 +77,74 @@ in
       "types"
     ];
   };
+
+  # Plugins whose repository root is the plugin, built the same way; `include` leaves out each
+  # repository's flake, tests and developer tools.
+
+  # Keeps the Mac awake while Claude Code works, through caffeinate(1). Its hook runs
+  # bin/claffeinate, which reads share/claffeinate/defaults.conf beside it, and its skills run
+  # `claffeinate` from the bin/ Claude Code puts on the Bash tool's PATH. The macOS tools it
+  # drives (caffeinate, pmset, BSD ps, lsof) can only come from the system. jq, which the hook
+  # needs to read its payload for the subagent and shell holds and the command needs for
+  # --json, isn't on every Mac, so both put the pinned one first on their PATH.
+  claffeinate = mkClaudePlugin {
+    src = /. + builtins.unsafeDiscardStringContext "${inputs.claffeinate-src}";
+    include = [
+      ".claude-plugin/plugin.json"
+      "bin"
+      "hooks"
+      "share"
+      "skills"
+    ];
+    postPatch = ''
+      substituteInPlace hooks/claffeinate-hook.sh --replace-fail 'set -uo pipefail' \
+        $'set -uo pipefail\nPATH="${lib.getBin pkgs.jq}/bin:$PATH"'
+      substituteInPlace bin/claffeinate --replace-fail 'set -euo pipefail' \
+        $'set -euo pipefail\nPATH="${lib.getBin pkgs.jq}/bin:$PATH"'
+    '';
+  };
+
+  # Tells the model the terminal's width when it changes: one mod module, and its state types.
+  terminal-width = mkClaudePlugin {
+    src = /. + builtins.unsafeDiscardStringContext "${inputs.claude-code-terminal-width-src}";
+    include = [
+      ".claude-plugin/plugin.json"
+      "hooks"
+      "types"
+    ];
+  };
+
+  # Loads the project's Nix devshell into every Bash command, and adds the worktree-worker
+  # agent. Upstream, its hooks, and the lines SessionStart writes to CLAUDE_ENV_FILE, call the
+  # `nix-devshell-cached-exports` command by name, installed on its own; here each call names
+  # the command built from the same pin by the repository's package.nix, so the plugin works
+  # without it on PATH. bin/ and share/ are left out: the unwrapped script there lacks the
+  # package's pinned tools, and Claude Code would put it on the Bash tool's PATH.
+  nix-devshell-cached-exports =
+    let
+      src = "${inputs.nix-devshell-cached-exports-src}";
+      exe = lib.getExe (pkgs.callPackage "${src}/package.nix" { });
+    in
+    mkClaudePlugin {
+      src = /. + builtins.unsafeDiscardStringContext src;
+      include = [
+        ".claude-plugin/plugin.json"
+        "agents"
+        "hooks"
+      ];
+      postPatch = ''
+        for hook in hooks/{session-start,subagent-start,pre-tool-use}.sh; do
+          substituteInPlace $hook --replace-fail \
+            'command -v nix-devshell-cached-exports ' 'command -v ${exe} '
+        done
+        for hook in hooks/{subagent-start,pre-tool-use}.sh; do
+          substituteInPlace $hook --replace-fail \
+            'key=$(nix-devshell-cached-exports ' 'key=$(${exe} '
+        done
+        substituteInPlace hooks/session-start.sh \
+          --replace-fail 'if nix-devshell-cached-exports ' 'if ${exe} ' \
+          --replace-fail '"$(nix-devshell-cached-exports' '"$(${exe}' \
+          --replace-fail '(nix-devshell-cached-exports </dev/null' '(${exe} </dev/null'
+      '';
+    };
 }
