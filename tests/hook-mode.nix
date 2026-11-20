@@ -31,9 +31,10 @@ let
     "reply-lint"
   ];
   badValue = pkgs.writeText "hook-modes.json" (builtins.toJSON { check-guard = "block"; });
-  # Plugins mkClaudePlugin builds in this flake; the first-party ones are built in their own.
+  # Plugins mkClaudePlugin builds in this flake; the other first-party ones are built in their own.
   builtHere = [
     plugin
+    p.agentree-statusline
     p.cc-safety-net
     p.superpowers
     p.trailofbits-insecure-defaults

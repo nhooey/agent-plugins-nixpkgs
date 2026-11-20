@@ -49,7 +49,10 @@ let
   });
   userOnly = pkgs.writeText "activation-user-only" (activationText {
     enable = true;
-    userPlugins = [ p.superpowers ];
+    userPlugins = [
+      p.superpowers
+      p.agentree-statusline
+    ];
   });
   # A different build of superpowers, with the same plugin name.
   trimmedSuperpowers = p.superpowers.override { excludeSkills = [ "diagnosing-superpowers" ]; };
@@ -144,8 +147,16 @@ pkgs.runCommand "check-darwin-module" { nativeBuildInputs = [ pkgs.jq ]; } ''
 
   s=$(settings_of ${userOnly} 40-agent-plugins.json)
   assert_json $s '.enabledPlugins == {}' "user plugins only: nothing enabled"
-  assert_json "$(jq -r '.extraKnownMarketplaces["nix-pinned"].source.path' $s)/.claude-plugin/marketplace.json" \
-    '[.plugins[].name] == ["superpowers"]' "user plugins only: the marketplace is still registered and lists them"
+  market=$(jq -r '.extraKnownMarketplaces["nix-pinned"].source.path' $s)
+  assert_json $market/.claude-plugin/marketplace.json \
+    '[.plugins[].name] == ["superpowers", "agentree-statusline"]' "user plugins only: the marketplace is still registered and lists them"
+  # Each module the mod's hooks.json registers is in the marketplace copy.
+  hooks=$market/agentree-statusline/hooks
+  modules=$(jq -r '.modules[]' $hooks/hooks.json)
+  test -n "$modules" || fail "agentree-statusline@nix-pinned registers no module"
+  while IFS= read -r module; do
+    test -f "$hooks/$module" || fail "agentree-statusline@nix-pinned lacks hooks/$module"
+  done <<< "$modules"
 
   touch $out
 ''

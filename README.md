@@ -32,15 +32,17 @@ A name the plugin doesn't have under `skills/` fails the build, so an upstream r
 To load plugins for one session without installing them, pass each package's store path to `claude --plugin-dir`.
 
 First-party plugin repositories should export their plugin directory as a flake package of their own; this flake then takes them as inputs and passes them through.
-These come through so far, each a hooks-only plugin whose `hooks.json` runs scripts copied in from the skills that document and test them:
+A repository whose package lacks the passthru `mkMarketplace` reads, such as `agentree-statusline`, is taken as a `flake = false` source instead, and its plugin directory is built here with `mkClaudePlugin`.
+These come through so far: the two `*-hooks` plugins are hooks-only, their `hooks.json` running scripts copied in from the skills that document and test them, and the other two are mods with code of their own:
 
 | Package                     | Plugin                                                                                                                                                                                                                                                                                                                  |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `coding-agent-skills-hooks` | The `hooks-plugin` package of [`coding-agent-skills`](https://github.com/nhooey/coding-agent-skills): `session-build-limits.sh` at SessionStart, the scratchpad guard before Bash, Write and Edit and at SubagentStart, the memory-write reminder, the plans check, the browser check, and the reply lint at Stop. |
 | `git-skills-hooks`          | The `hooks-plugin` package of [`git-skills`](https://github.com/nhooey/git-skills): `pull-request-sync-check.sh` after Bash, which flags an open pull request whose title or body has drifted from its commit.                                                                                                       |
 | `coding-agent-kanban-turns` | The `plugin` package of [`coding-agent-kanban-turns`](https://github.com/nhooey/coding-agent-kanban-turns): the kanban turn responses' mod, which draws clickable answers for Decide items and registers the `kanban_options` tool. |
+| `agentree-statusline`       | The `plugin/` folder of [`agentree-statusline`](https://github.com/nhooey/agentree-statusline), built here with `mkClaudePlugin` from the `flake = false` input `agentree-statusline-src`: the mod that draws the session and its subagents as a live tree above the prompt, with cost, plan usage and timing. |
 
-An update to any of them is a lock bump here (`agent-plugins update coding-agent-skills`, `agent-plugins update git-skills` or `agent-plugins update coding-agent-kanban-turns`), then a lock bump of this flake in MyNixOS, and a switch.
+An update to any of them is a lock bump here (`agent-plugins update coding-agent-skills`, `agent-plugins update git-skills`, `agent-plugins update coding-agent-kanban-turns` or `agent-plugins update agentree-statusline-src`), then a lock bump of this flake in MyNixOS, and a switch.
 Claude Code loads the new build at the next session start.
 
 ## nix-darwin module
@@ -214,7 +216,7 @@ Its tool, `agent-plugins`, takes the command tokens `build`, `check`, `fmt`, `li
 `agent-plugins check`, or `nix flake check`, runs the checks in `tests/`, one file per concern, with shared shell in `tests/lib/helpers.sh`:
 
 - `vendored-plugins`: each plugin's name, version and derivation name come from its manifest, Safety Net's hook runs the pinned node, and `excludeSkills` removes exactly the skill it names.
-- `first-party-plugins`: each passed-through hooks plugin is named by its manifest, and holds every script its `hooks.json` runs.
+- `first-party-plugins`: each passed-through hooks plugin is named by its manifest, and holds every script its `hooks.json` runs; `agentree-statusline` is named by its manifest, holds only the paths its `include` lists, and holds every module its `hooks.json` registers.
 - `exclude-skills-unknown-name`: naming a skill the plugin lacks fails the build.
 - `mk-claude-plugin-include`: `include` copies only the paths it lists, skips those the plugin lacks, and still adds the hook-mode helper; without it, the whole source is copied.
 - `claude-plugin-flake-module`: `flakeModules.claudePlugin`, in minimal flake-parts consumers, builds `packages.plugin` with the default `include`, adds the `plugin-build` command only when devshell's flake module is imported, and adds nothing when disabled.

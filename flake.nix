@@ -7,6 +7,8 @@
   # 2. FIRST-PARTY plugins: a repository that exports its plugin as a flake package of its own
   #    is taken as an input and passed through: coding-agent-skills and git-skills, each as its
   #    `hooks-plugin` package, and coding-agent-kanban-turns as its `plugin` package.
+  #    agentree-statusline is the exception: pkgs/ builds it from the `flake = false`
+  #    agentree-statusline-src input, as it does the vendored plugins.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Only for the checks that evaluate flakeModules.claudePlugin in a consumer flake.
@@ -38,7 +40,8 @@
       flake = false;
     };
     # ---- first-party plugin repositories ----
-    # Flakes, for their `hooks-plugin` packages (packages below), on their default branches.
+    # On their default branches. Flakes for their `hooks-plugin` or `plugin` packages (packages
+    # below), except agentree-statusline-src, a plain source pkgs/ builds with mkClaudePlugin.
     # git-skills' rulebook still comes from git-skills-src below, at its own pin.
     coding-agent-skills = {
       url = "github:nhooey/coding-agent-skills";
@@ -53,6 +56,13 @@
     coding-agent-kanban-turns = {
       url = "github:nhooey/coding-agent-kanban-turns";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # The agent tree status line's mod, built in pkgs/ from its plugin/ folder with
+    # lib.mkClaudePlugin, for the passthru the module reads. A plain source: its flake's
+    # dev-shell inputs aren't needed here.
+    agentree-statusline-src = {
+      url = "github:nhooey/agentree-statusline";
+      flake = false;
     };
 
     # CC Safety Net rulebooks published in first-party skill repos (safetyNetRulebooks below).
