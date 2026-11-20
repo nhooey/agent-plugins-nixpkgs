@@ -1,6 +1,7 @@
 # flakeModules.claudePlugin, imported by minimal flake-parts consumers: without devshell it
 # builds the plugin as packages.plugin with the five default paths; with numtide devshell's
-# flake module it also adds a `plugin-build` command for the package; disabled, it adds nothing.
+# flake module it also adds a `plugin-build` command for the package; `postPatch` runs in the
+# copy, so a file it writes lands in the package; disabled, it adds nothing.
 {
   self,
   pkgs,
@@ -38,6 +39,14 @@ let
     enable = true;
     inherit src;
     packageName = "my-plugin";
+  };
+  withPostPatch = consumer [ ] {
+    enable = true;
+    inherit src;
+    postPatch = ''
+      mkdir -p vendor
+      echo generated > vendor/generated.js
+    '';
   };
   disabled = consumer [ ] { inherit src; };
   expected = self.lib.mkClaudePlugin pkgs {
@@ -78,6 +87,11 @@ pkgs.runCommand "check-claude-plugin-flake-module" { nativeBuildInputs = [ pkgs.
   assert_json $f \
     '[.commands[] | select(.name == "plugin-build")] == [{name: "plugin-build", category: "build", command: "nix build \"$PRJ_ROOT#my-plugin\" --out-link \"$PRJ_ROOT/result-plugin\""}]' \
     "plugin-build command"
+
+  postPatched=${withPostPatch.packages.${system}.plugin}
+  test "$(cat $postPatched/vendor/generated.js)" = generated \
+    || fail "postPatch's vendor/generated.js missing from packages.plugin"
+  test -e $postPatched/lib/hook-mode.sh || fail "hook-mode helper missing beside postPatch's file"
 
   assert_json $f '.disabledPackages == []' "disabled, no package"
 
