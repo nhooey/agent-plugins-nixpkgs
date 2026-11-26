@@ -97,11 +97,11 @@
     "agentree-statusline-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1795193570,
-        "narHash": "sha256-FC1khKaefm5y7MFH/2XzwJErCEDOQbs9QFnoCLURHsg=",
+        "lastModified": 1795706461,
+        "narHash": "sha256-AJ1Z8y7KGUd4fAUtWHwhxlkP3DjwH9rtJVpClB+Zy9E=",
         "owner": "nhooey",
         "repo": "agentree-statusline",
-        "rev": "34a14cd7f99f1d80e8d63f50b567136eac61e9ba",
+        "rev": "a1093510179b33891f877dcebb2ef6b0af0d700c",
         "type": "github"
       },
       "original": {
@@ -175,11 +175,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795208263,
-        "narHash": "sha256-+PCGnKvw85O4S24reMH6WolnLZZkw6+Q/ik+/LT9sek=",
+        "lastModified": 1795209902,
+        "narHash": "sha256-qO2msEooVEiWPFyhzu64ssbFgkhwUFaW3LFTjdZrkic=",
         "owner": "nhooey",
         "repo": "coding-agent-kanban-turns",
-        "rev": "a25a7493a0a9dc331dd3a38157a7f1cfcf3f94f7",
+        "rev": "26fd266db3577f0278473e326912e4749f3d6afe",
         "type": "github"
       },
       "original": {
