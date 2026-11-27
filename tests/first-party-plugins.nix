@@ -116,7 +116,7 @@ pkgs.runCommand "check-first-party-plugins" { nativeBuildInputs = [ pkgs.jq ]; }
     test -f "$a/hooks/$module" || fail "agentree-statusline lacks hooks/$module, which its hooks.json registers"
   done <<< "$modules"
   # Files the engine reads at run time rather than imports.
-  for f in defaults/config.jsonc hooks/eta-instruction.md; do
+  for f in defaults/config.yaml hooks/eta-instruction.md; do
     test -f $a/$f || fail "agentree-statusline lacks $f"
   done
   # Every relative import resolves inside the build: esbuild parses each module and fails on an
