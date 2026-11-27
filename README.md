@@ -46,8 +46,12 @@ These come through so far: the two `*-hooks` plugins are hooks-only, their `hook
 | `terminal-width`            | [`claude-code-terminal-width`](https://github.com/nhooey/claude-code-terminal-width), built from the input `claude-code-terminal-width-src`: the mod that tells the model the terminal's width when it changes. |
 | `nix-devshell-cached-exports` | [`nix-devshell-cached-exports`](https://github.com/nhooey/nix-devshell-cached-exports), built from the input `nix-devshell-cached-exports-src`: hooks that load the project's Nix devshell into every Bash command, and the `worktree-worker` agent; its hooks run the command its `package.nix` builds from the same pin. |
 
-An update to any of them is a lock bump here (`agent-plugins update coding-agent-skills`, `agent-plugins update git-skills`, `agent-plugins update coding-agent-kanban-turns`, or `agent-plugins update` with the plugin's `*-src` input), then a lock bump of this flake in MyNixOS, and a switch.
+An update to any of them is a lock bump here (`agent-plugins update coding-agent-skills`, `agent-plugins update git-skills`, `agent-plugins update coding-agent-kanban-turns`, or `agent-plugins update` with the plugin's `*-src` input), then a lock bump of this flake in the system configuration that installs it, and a switch.
 Claude Code loads the new build at the next session start.
+
+One package isn't a plugin: `git-push-force-safely-hooks` is the [`git-skills`](https://github.com/nhooey/git-skills) folder for a global `core.hooksPath`, passed through at the same pin as `git-skills-hooks`.
+Its `pre-push` refuses deleting or rewriting a remote's default branch, and each other hook git documents in githooks(5) runs the repository's own hook of that name.
+Set it with Home Manager's `programs.git.extraConfig.core.hooksPath = "${inputs.agent-plugins-nixpkgs.packages.${system}.git-push-force-safely-hooks}";`.
 
 ## nix-darwin module
 
