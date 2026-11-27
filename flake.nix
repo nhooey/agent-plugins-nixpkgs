@@ -122,7 +122,8 @@
           programs.ruff-format.enable = true;
         }
       );
-      # The `agent-plugins` command-line tool, kept out of `packages`, which lists plugins only.
+      # The `agent-plugins` command-line tool, kept out of `packages`, which lists plugins and
+      # git-skills' git hooks folder.
       agentPluginsTool = pkgs: pkgs.callPackage ./scripts/agent-plugins.nix { };
     in
     {

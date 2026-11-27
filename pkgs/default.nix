@@ -54,6 +54,12 @@ in
   {
     coding-agent-skills-hooks = inputs.coding-agent-skills.packages.${system}.hooks-plugin;
     git-skills-hooks = inputs.git-skills.packages.${system}.hooks-plugin;
+
+    # Not a plugin: git-skills' folder for a global `core.hooksPath`, passed through so a
+    # configuration that takes this flake can name it. Its `pre-push` refuses rewriting a
+    # remote's default branch, and every other hook githooks(5) documents runs the repository's
+    # own hook of that name.
+    git-push-force-safely-hooks = inputs.git-skills.packages.${system}.git-push-force-safely-hooks;
   }
 )
 # First-party plugins with code of their own: coding-agent-kanban-turns is its repository's
