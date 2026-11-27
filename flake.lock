@@ -175,11 +175,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795780334,
-        "narHash": "sha256-vkUSW0l22MAB+cfxi6h4hzoFMmRP30RawVtj3PijH4Y=",
+        "lastModified": 1795789316,
+        "narHash": "sha256-LXRyUHe1ajW9cKrNW2+S1meYDUWH3zoP5EI3fw7i6XE=",
         "owner": "nhooey",
         "repo": "coding-agent-kanban-turns",
-        "rev": "82aa9a334b03d1ac224c7c4bd542844116938241",
+        "rev": "4f92dfa3c2220ec3da924d9909cbdc4e45cb1797",
         "type": "github"
       },
       "original": {
