@@ -97,11 +97,11 @@
     "agentree-statusline-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1795706461,
-        "narHash": "sha256-AJ1Z8y7KGUd4fAUtWHwhxlkP3DjwH9rtJVpClB+Zy9E=",
+        "lastModified": 1795780718,
+        "narHash": "sha256-1S4GMVX6uxNgvxO9o+h+zoz62tWeIDO+9iXIB1tIKpw=",
         "owner": "nhooey",
         "repo": "agentree-statusline",
-        "rev": "a1093510179b33891f877dcebb2ef6b0af0d700c",
+        "rev": "7f9266e3b0e5620c32a6c738a0405d18e1547d89",
         "type": "github"
       },
       "original": {
@@ -175,11 +175,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795209902,
-        "narHash": "sha256-qO2msEooVEiWPFyhzu64ssbFgkhwUFaW3LFTjdZrkic=",
+        "lastModified": 1795780334,
+        "narHash": "sha256-vkUSW0l22MAB+cfxi6h4hzoFMmRP30RawVtj3PijH4Y=",
         "owner": "nhooey",
         "repo": "coding-agent-kanban-turns",
-        "rev": "26fd266db3577f0278473e326912e4749f3d6afe",
+        "rev": "82aa9a334b03d1ac224c7c4bd542844116938241",
         "type": "github"
       },
       "original": {
@@ -199,11 +199,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1795189935,
-        "narHash": "sha256-EwpLCu6qaN498x8poGbPamYtxAHmy+ZoLWnkzKGt2lM=",
+        "lastModified": 1795777547,
+        "narHash": "sha256-3gIZ9hRRTVI8g1OBzxcs15hNzUG4DdYtIbx4ODsIsrg=",
         "owner": "nhooey",
         "repo": "coding-agent-skills",
-        "rev": "52d5d21cde45f5a49ed3a7f4f767b65fc05a53d9",
+        "rev": "99bc12d0d430d8a2f1e57f3c3a963d7d279084fd",
         "type": "github"
       },
       "original": {
@@ -438,11 +438,11 @@
         "treefmt-nix": "treefmt-nix_4"
       },
       "locked": {
-        "lastModified": 1795186971,
-        "narHash": "sha256-5YI/EwEgpRdWTYsXDxqssArvz9/ITUptMc7Crrx9qYI=",
+        "lastModified": 1795706408,
+        "narHash": "sha256-kpHa906WHXTGNh9ve5iDPfF3lirTXi86YOfLakSJ5QU=",
         "owner": "nhooey",
         "repo": "git-skills",
-        "rev": "81620af95dc53ac288bd46c4fe6ce5a34291024f",
+        "rev": "68af82342756907f28e22fe49be2a7d5dd707f1d",
         "type": "github"
       },
       "original": {
@@ -454,11 +454,11 @@
     "git-skills-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1795017757,
-        "narHash": "sha256-91cP0nAd1qpzT1tNOx6RkpUJVZrUm5CC8LFkfQ1kcKA=",
+        "lastModified": 1795706408,
+        "narHash": "sha256-kpHa906WHXTGNh9ve5iDPfF3lirTXi86YOfLakSJ5QU=",
         "owner": "nhooey",
         "repo": "git-skills",
-        "rev": "ac9fdee899957a4095f5d6c179a1fe08fe688fcf",
+        "rev": "68af82342756907f28e22fe49be2a7d5dd707f1d",
         "type": "github"
       },
       "original": {
